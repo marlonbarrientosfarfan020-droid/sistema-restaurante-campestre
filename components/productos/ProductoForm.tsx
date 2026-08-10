@@ -10,6 +10,8 @@ import {
   LoaderCircle,
   PackageOpen,
   Save,
+  Trash2,
+  UploadCloud,
 } from "lucide-react";
 
 import type {
@@ -63,6 +65,16 @@ export default function ProductoForm({
     useState("");
 
   const [
+    subiendoImagen,
+    setSubiendoImagen,
+  ] = useState(false);
+
+  const [
+    nombreArchivoImagen,
+    setNombreArchivoImagen,
+  ] = useState("");
+
+  const [
     controlaStock,
     setControlaStock,
   ] = useState(false);
@@ -107,6 +119,7 @@ export default function ProductoForm({
         : "15"
     );
     setImagenUrl(producto?.imagenUrl ?? "");
+    setNombreArchivoImagen("");
 
     setControlaStock(
       producto?.controlaStock ?? false
@@ -128,6 +141,116 @@ export default function ProductoForm({
     setActivo(producto?.activo ?? true);
     setErrorLocal("");
   }, [producto, categorias]);
+
+  async function seleccionarImagen(
+    archivo: File | null
+  ) {
+    if (!archivo) {
+      return;
+    }
+
+    setErrorLocal("");
+
+    const tiposPermitidos = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/avif",
+    ];
+
+    if (
+      !tiposPermitidos.includes(
+        archivo.type
+      )
+    ) {
+      setErrorLocal(
+        "La imagen debe ser JPG, PNG, WEBP o AVIF."
+      );
+      return;
+    }
+
+    const tamanoMaximo =
+      5 * 1024 * 1024;
+
+    if (
+      archivo.size >
+      tamanoMaximo
+    ) {
+      setErrorLocal(
+        "La imagen no puede superar los 5 MB."
+      );
+      return;
+    }
+
+    try {
+      setSubiendoImagen(
+        true
+      );
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "archivo",
+        archivo
+      );
+
+      const respuesta =
+        await fetch(
+          "/api/upload/productos",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+      const resultado =
+        (await respuesta.json()) as {
+          ok?: boolean;
+          message?: string;
+          data?: {
+            url?: string;
+          };
+        };
+
+      if (
+        !respuesta.ok ||
+        !resultado.ok ||
+        !resultado.data?.url
+      ) {
+        throw new Error(
+          resultado.message ||
+            "No se pudo subir la imagen."
+        );
+      }
+
+      setImagenUrl(
+        resultado.data.url
+      );
+
+      setNombreArchivoImagen(
+        archivo.name
+      );
+    } catch (
+      errorDesconocido
+    ) {
+      setErrorLocal(
+        errorDesconocido instanceof Error
+          ? errorDesconocido.message
+          : "No se pudo subir la imagen."
+      );
+    } finally {
+      setSubiendoImagen(
+        false
+      );
+    }
+  }
+
+  function quitarImagen() {
+    setImagenUrl("");
+    setNombreArchivoImagen("");
+    setErrorLocal("");
+  }
 
   async function enviarFormulario(
     evento: FormEvent<HTMLFormElement>
@@ -391,48 +514,158 @@ export default function ProductoForm({
         </div>
       </div>
 
-      <div>
-        <label className="mb-2 block text-sm font-bold text-slate-700">
-          Dirección de la imagen
-        </label>
+      <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-blue-100 p-3 text-blue-700">
+              <ImageIcon
+                size={22}
+              />
+            </div>
 
-        <input
-          type="url"
-          value={imagenUrl}
-          onChange={(evento) =>
-            setImagenUrl(evento.target.value)
-          }
-          placeholder="https://..."
-          disabled={guardando}
-          className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
-        />
+            <div>
+              <p className="font-black text-slate-950">
+                Imagen del producto
+              </p>
 
-        <p className="mt-2 text-xs text-slate-500">
-          Por ahora puedes colocar una URL. En el
-          siguiente avance conectaremos Vercel Blob.
-        </p>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-        {imagenUrl ? (
-          <img
-            src={imagenUrl}
-            alt="Vista previa"
-            className="h-56 w-full object-cover"
-            onError={(evento) => {
-              evento.currentTarget.style.display =
-                "none";
-            }}
-          />
-        ) : (
-          <div className="flex h-44 flex-col items-center justify-center text-slate-400">
-            <ImageIcon size={42} />
-            <p className="mt-2 text-sm font-bold">
-              Vista previa de la imagen
-            </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Sube una foto desde tu PC o celular. Se guardará en Vercel Blob.
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+
+          <label
+            className={`flex cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-3 font-black transition ${
+              subiendoImagen ||
+              guardando
+                ? "cursor-not-allowed bg-slate-200 text-slate-400"
+                : "bg-blue-600 text-white hover:bg-blue-500"
+            }`}
+          >
+            {subiendoImagen ? (
+              <>
+                <LoaderCircle
+                  size={19}
+                  className="animate-spin"
+                />
+                Subiendo...
+              </>
+            ) : (
+              <>
+                <UploadCloud
+                  size={19}
+                />
+                Seleccionar imagen
+              </>
+            )}
+
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              className="hidden"
+              disabled={
+                subiendoImagen ||
+                guardando
+              }
+              onChange={(
+                evento
+              ) => {
+                const archivo =
+                  evento.target.files?.[0] ??
+                  null;
+
+                void seleccionarImagen(
+                  archivo
+                );
+
+                evento.currentTarget.value =
+                  "";
+              }}
+            />
+          </label>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          {imagenUrl ? (
+            <div>
+              <img
+                src={imagenUrl}
+                alt={
+                  nombre ||
+                  "Vista previa del producto"
+                }
+                className="h-64 w-full object-cover"
+              />
+
+              <div className="flex flex-col justify-between gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-emerald-700">
+                    Imagen lista
+                  </p>
+
+                  <p className="mt-1 truncate text-xs text-slate-500">
+                    {nombreArchivoImagen ||
+                      "Imagen actual del producto"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    quitarImagen
+                  }
+                  disabled={
+                    subiendoImagen ||
+                    guardando
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                >
+                  <Trash2
+                    size={17}
+                  />
+                  Quitar imagen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-56 flex-col items-center justify-center px-6 text-center text-slate-400">
+              <ImageIcon
+                size={48}
+              />
+
+              <p className="mt-3 font-black text-slate-600">
+                Sin imagen
+              </p>
+
+              <p className="mt-1 text-sm">
+                Selecciona una foto para mostrar el plato en Productos y en la carta QR.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-500">
+          <span className="rounded-full bg-white px-3 py-1.5">
+            JPG
+          </span>
+
+          <span className="rounded-full bg-white px-3 py-1.5">
+            PNG
+          </span>
+
+          <span className="rounded-full bg-white px-3 py-1.5">
+            WEBP
+          </span>
+
+          <span className="rounded-full bg-white px-3 py-1.5">
+            AVIF
+          </span>
+
+          <span className="rounded-full bg-white px-3 py-1.5">
+            Máximo 5 MB
+          </span>
+        </div>
+      </section>
 
       <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -602,7 +835,10 @@ export default function ProductoForm({
 
       <button
         type="submit"
-        disabled={guardando}
+        disabled={
+          guardando ||
+          subiendoImagen
+        }
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-4 font-black text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {guardando ? (
