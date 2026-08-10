@@ -85,6 +85,9 @@ export class PedidoRepository {
         nombre: true,
         precioVenta: true,
         tiempoPreparacion: true,
+        controlaStock: true,
+        stockActual: true,
+        stockMinimo: true,
       },
     });
   }
@@ -803,15 +806,17 @@ export class PedidoRepository {
        *
        * PENDIENTE_CONFIRMACION y NUEVO no necesitan devolución.
        */
+      const estadosConStockDescontado: EstadoPedido[] = [
+        EstadoPedido.RECIBIDO,
+        EstadoPedido.PREPARANDO,
+        EstadoPedido.LISTO,
+        EstadoPedido.EN_ENTREGA,
+      ];
+
       if (
         nuevoEstado ===
           EstadoPedido.ANULADO &&
-        [
-          EstadoPedido.RECIBIDO,
-          EstadoPedido.PREPARANDO,
-          EstadoPedido.LISTO,
-          EstadoPedido.EN_ENTREGA,
-        ].includes(
+        estadosConStockDescontado.includes(
           pedido.estado
         )
       ) {

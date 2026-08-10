@@ -71,26 +71,3 @@ export type ActualizarProductoDTO = {
   disponible: boolean;
   activo: boolean;
 };
-export type CrearProductoDTO = {
-  sucursalId: string;
-  categoriaId: string;
-  nombre: string;
-  descripcion?: string;
-  precioVenta: number;
-  costo?: number;
-  tiempoPreparacion?: number;
-  imagenUrl?: string;
-  disponible?: boolean;
-};
-
-export type ActualizarProductoDTO = {
-  categoriaId: string;
-  nombre: string;
-  descripcion?: string;
-  precioVenta: number;
-  costo?: number;
-  tiempoPreparacion?: number;
-  imagenUrl?: string;
-  disponible: boolean;
-  activo: boolean;
-};

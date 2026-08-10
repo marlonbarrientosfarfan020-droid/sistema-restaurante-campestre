@@ -178,11 +178,13 @@ export class ComprobanteRepository {
           );
         }
 
+        const estadosValidosNotaVenta: EstadoAtencion[] = [
+          EstadoAtencion.PAGADA,
+          EstadoAtencion.CERRADA,
+        ];
+
         if (
-          ![
-            EstadoAtencion.PAGADA,
-            EstadoAtencion.CERRADA,
-          ].includes(
+          !estadosValidosNotaVenta.includes(
             atencion.estado
           )
         ) {

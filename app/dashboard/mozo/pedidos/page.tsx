@@ -620,7 +620,7 @@ export default function PedidosMozoPage() {
 
                           <p className="font-black">
                             S/{" "}
-                            {detalle.subtotal.toFixed(
+                            {Number(detalle.subtotal).toFixed(
                               2
                             )}
                           </p>
@@ -636,7 +636,7 @@ export default function PedidosMozoPage() {
 
                         <span className="text-2xl font-black">
                           S/{" "}
-                          {pedido.subtotal.toFixed(
+                          {Number(pedido.subtotal).toFixed(
                             2
                           )}
                         </span>
