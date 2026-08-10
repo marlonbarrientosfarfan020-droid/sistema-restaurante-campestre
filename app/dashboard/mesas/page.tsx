@@ -21,6 +21,7 @@ import {
   LogOut,
   ReceiptText,
   RefreshCcw,
+  QrCode,
   ShoppingBasket,
   Settings,
   Store,
@@ -643,6 +644,16 @@ export default function MesasPage() {
             </Link>
 
             <Link
+              href="/dashboard/mesas/qr"
+              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-300 transition hover:bg-slate-900"
+            >
+              <QrCode
+                size={20}
+              />
+              QR de mesas
+            </Link>
+
+            <Link
               href="/dashboard/cocina"
               className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-300 transition hover:bg-slate-900"
             >
@@ -772,6 +783,16 @@ export default function MesasPage() {
                           "No disponible"}
                     </p>
                   </div>
+
+                  <Link
+                    href="/dashboard/mesas/qr"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 font-black text-slate-950 transition hover:bg-amber-400"
+                  >
+                    <QrCode
+                      size={19}
+                    />
+                    QR de mesas
+                  </Link>
 
                   <button
                     type="button"
@@ -999,17 +1020,20 @@ export default function MesasPage() {
                         mesa.atencionActual;
 
                       return (
-                        <button
+                        <article
                           key={mesa.id}
-                          type="button"
-                          onClick={() => {
-                            limpiarMensajesPedido();
-                            setMesaSeleccionada(
-                              mesa
-                            );
-                          }}
-                          className={`rounded-3xl border-2 p-5 text-left shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg ${estilo.fondo} ${estilo.borde}`}
+                          className={`overflow-hidden rounded-3xl border-2 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg ${estilo.fondo} ${estilo.borde}`}
                         >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              limpiarMensajesPedido();
+                              setMesaSeleccionada(
+                                mesa
+                              );
+                            }}
+                            className="w-full p-5 text-left"
+                          >
                           <div className="flex items-start justify-between">
                             <div>
                               <p className="text-xs font-black uppercase tracking-wider text-slate-500">
@@ -1124,7 +1148,33 @@ export default function MesasPage() {
                               </div>
                             </div>
                           )}
-                        </button>
+                          </button>
+
+                          <div className="grid grid-cols-2 gap-2 border-t border-black/10 bg-white/70 p-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                limpiarMensajesPedido();
+                                setMesaSeleccionada(
+                                  mesa
+                                );
+                              }}
+                              className="flex items-center justify-center rounded-xl bg-slate-950 px-3 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                            >
+                              Gestionar
+                            </button>
+
+                            <Link
+                              href="/dashboard/mesas/qr"
+                              className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-3 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-400"
+                            >
+                              <QrCode
+                                size={17}
+                              />
+                              Ver QR
+                            </Link>
+                          </div>
+                        </article>
                       );
                     }
                   )}
