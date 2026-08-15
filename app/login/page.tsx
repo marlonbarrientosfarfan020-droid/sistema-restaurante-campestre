@@ -86,8 +86,21 @@ export default function LoginPage() {
           }
         );
 
-      const resultado =
-        (await respuesta.json()) as LoginResponse;
+     const texto = await respuesta.text();
+
+console.log("STATUS LOGIN:", respuesta.status);
+console.log("CONTENT-TYPE:", respuesta.headers.get("content-type"));
+console.log("RESPUESTA LOGIN:", texto);
+
+let resultado: LoginResponse;
+
+try {
+  resultado = JSON.parse(texto) as LoginResponse;
+} catch {
+  throw new Error(
+    `La API de login no devolvió JSON. Estado HTTP: ${respuesta.status}`
+  );
+}
 
       if (
         !respuesta.ok ||

@@ -38,7 +38,8 @@ type MetodoCaja =
   | "EFECTIVO"
   | "YAPE"
   | "PLIN"
-  | "TARJETA";
+  | "TARJETA"
+  | "MIXTO";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -90,6 +91,14 @@ const METODOS: Array<{
     descripcion:
       "Débito o crédito.",
     icono: <CreditCard size={22} />,
+  },
+
+  {
+    id: "MIXTO",
+    nombre: "Mixto",
+    descripcion:
+      "Divide el pago entre dos métodos.",
+    icono: <WalletCards size={22} />,
   },
 ];
 
@@ -158,6 +167,52 @@ export default function CajaPage() {
   const [
     observacion,
     setObservacion,
+  ] = useState("");
+
+  const [
+    metodoMixto1,
+    setMetodoMixto1,
+  ] =
+    useState<Exclude<MetodoCaja, "MIXTO">>(
+      "EFECTIVO"
+    );
+
+  const [
+    metodoMixto2,
+    setMetodoMixto2,
+  ] =
+    useState<Exclude<MetodoCaja, "MIXTO">>(
+      "YAPE"
+    );
+
+  const [
+    montoMixto1,
+    setMontoMixto1,
+  ] = useState("");
+
+  const [
+    montoMixto2,
+    setMontoMixto2,
+  ] = useState("");
+
+  const [
+    referenciaMixto1,
+    setReferenciaMixto1,
+  ] = useState("");
+
+  const [
+    referenciaMixto2,
+    setReferenciaMixto2,
+  ] = useState("");
+
+  const [
+    recibidoMixto1,
+    setRecibidoMixto1,
+  ] = useState("");
+
+  const [
+    recibidoMixto2,
+    setRecibidoMixto2,
   ] = useState("");
 
   const [
@@ -271,10 +326,129 @@ export default function CajaPage() {
       saldoPendiente,
     ]);
 
+  function metodoInicialDesdeCuenta(
+    cuenta: CuentaCaja
+  ): MetodoCaja {
+    return (
+      cuenta.metodoPagoPrevisto ??
+      "EFECTIVO"
+    );
+  }
+
+  async function cobrarMixto() {
+    if (!cuentaSeleccionada) {
+      return;
+    }
+
+    const monto1 = Number(montoMixto1);
+    const monto2 = Number(montoMixto2);
+
+    if (
+      !Number.isFinite(monto1) ||
+      !Number.isFinite(monto2) ||
+      monto1 <= 0 ||
+      monto2 <= 0
+    ) {
+      window.alert(
+        "Ingresa dos montos válidos para el pago mixto."
+      );
+      return;
+    }
+
+    if (metodoMixto1 === metodoMixto2) {
+      window.alert(
+        "Selecciona dos métodos distintos."
+      );
+      return;
+    }
+
+    const totalMixto =
+      Math.round((monto1 + monto2) * 100) /
+      100;
+
+    if (
+      totalMixto !==
+      Math.round(saldoPendiente * 100) /
+        100
+    ) {
+      window.alert(
+        `La suma debe ser S/ ${saldoPendiente.toFixed(
+          2
+        )}.`
+      );
+      return;
+    }
+
+    const confirmado =
+      window.confirm(
+        `¿Registrar pago mixto de ${cuentaSeleccionada.mesa.nombre} por S/ ${saldoPendiente.toFixed(
+          2
+        )}?`
+      );
+
+    if (!confirmado) {
+      return;
+    }
+
+    const resultado1 =
+      await registrarPago({
+        atencionId:
+          cuentaSeleccionada.id,
+        metodo: metodoMixto1,
+        monto: monto1,
+        montoRecibido:
+          metodoMixto1 === "EFECTIVO"
+            ? Number(recibidoMixto1)
+            : undefined,
+        referencia:
+          referenciaMixto1.trim() ||
+          undefined,
+        observacion:
+          "Pago mixto - parte 1",
+      });
+
+    if (!resultado1) {
+      return;
+    }
+
+    const resultado2 =
+      await registrarPago({
+        atencionId:
+          cuentaSeleccionada.id,
+        metodo: metodoMixto2,
+        monto: monto2,
+        montoRecibido:
+          metodoMixto2 === "EFECTIVO"
+            ? Number(recibidoMixto2)
+            : undefined,
+        referencia:
+          referenciaMixto2.trim() ||
+          undefined,
+        observacion:
+          "Pago mixto - parte 2",
+      });
+
+    if (!resultado2) {
+      return;
+    }
+
+    setMontoMixto1("");
+    setMontoMixto2("");
+    setReferenciaMixto1("");
+    setReferenciaMixto2("");
+    setRecibidoMixto1("");
+    setRecibidoMixto2("");
+  }
+
   async function cobrar() {
     if (
       !cuentaSeleccionada
     ) {
+      return;
+    }
+
+    if (metodo === "MIXTO") {
+      await cobrarMixto();
       return;
     }
 
@@ -294,7 +468,11 @@ export default function CajaPage() {
         atencionId:
           cuentaSeleccionada.id,
 
-        metodo,
+        metodo:
+          metodo as Exclude<
+            MetodoCaja,
+            "MIXTO"
+          >,
 
         monto:
           saldoPendiente,
@@ -441,10 +619,22 @@ export default function CajaPage() {
       return;
     }
 
-    const pago =
-      cuentaSeleccionada.pagos[
-        cuentaSeleccionada.pagos.length - 1
-      ];
+    const pagosHtml =
+      cuentaSeleccionada.pagos
+        .map(
+          (pago) => `
+            <p>
+              <strong>${pago.metodo}:</strong>
+              S/ ${pago.monto.toFixed(2)}
+              ${
+                pago.referencia
+                  ? ` · Ref: ${pago.referencia}`
+                  : ""
+              }
+            </p>
+          `
+        )
+        .join("");
 
     const filas =
       cuentaSeleccionada.pedidos
@@ -513,12 +703,7 @@ export default function CajaPage() {
 
           <div class="line"></div>
 
-          <p><strong>Método:</strong> ${pago?.metodo ?? "--"}</p>
-          ${
-            pago?.referencia
-              ? `<p><strong>Referencia:</strong> ${pago.referencia}</p>`
-              : ""
-          }
+          ${pagosHtml || "<p><strong>Método:</strong> --</p>"}
 
           <div class="line"></div>
           <p class="center muted">Gracias por su visita</p>
@@ -1083,6 +1268,21 @@ export default function CajaPage() {
                     el cliente.
                   </p>
 
+                  <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-xs font-black uppercase tracking-wider text-blue-700">
+                      Método previsto por el cliente
+                    </p>
+
+                    <p className="mt-1 text-lg font-black text-slate-950">
+                      {cuentaSeleccionada.metodoPagoPrevisto ??
+                        "No indicado"}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-600">
+                      Puedes respetarlo o cambiarlo antes de cobrar.
+                    </p>
+                  </div>
+
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     {METODOS.map(
                       (item) => (
@@ -1212,6 +1412,173 @@ export default function CajaPage() {
                         }
                         className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
                       />
+                    </div>
+                  )}
+
+                  {metodo === "MIXTO" && (
+                    <div className="mt-5 rounded-3xl border border-violet-200 bg-violet-50 p-4">
+                      <p className="text-sm font-black text-violet-800">
+                        Dividir pago
+                      </p>
+
+                      <p className="mt-1 text-xs text-violet-700">
+                        La suma de ambas partes debe ser S/{" "}
+                        {saldoPendiente.toFixed(2)}.
+                      </p>
+
+                      {[1, 2].map((numero) => {
+                        const esPrimero =
+                          numero === 1;
+                        const metodoParte =
+                          esPrimero
+                            ? metodoMixto1
+                            : metodoMixto2;
+                        const montoParte =
+                          esPrimero
+                            ? montoMixto1
+                            : montoMixto2;
+                        const referenciaParte =
+                          esPrimero
+                            ? referenciaMixto1
+                            : referenciaMixto2;
+                        const recibidoParte =
+                          esPrimero
+                            ? recibidoMixto1
+                            : recibidoMixto2;
+
+                        return (
+                          <div
+                            key={numero}
+                            className="mt-4 rounded-2xl border border-violet-200 bg-white p-4"
+                          >
+                            <p className="text-xs font-black uppercase text-violet-700">
+                              Parte {numero}
+                            </p>
+
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                              <select
+                                value={metodoParte}
+                                onChange={(evento) => {
+                                  const valor =
+                                    evento.target.value as Exclude<
+                                      MetodoCaja,
+                                      "MIXTO"
+                                    >;
+
+                                  if (esPrimero) {
+                                    setMetodoMixto1(
+                                      valor
+                                    );
+                                  } else {
+                                    setMetodoMixto2(
+                                      valor
+                                    );
+                                  }
+                                }}
+                                className="rounded-xl border border-slate-300 px-3 py-3 font-bold"
+                              >
+                                <option value="EFECTIVO">
+                                  Efectivo
+                                </option>
+                                <option value="YAPE">
+                                  Yape
+                                </option>
+                                <option value="PLIN">
+                                  Plin
+                                </option>
+                                <option value="TARJETA">
+                                  Tarjeta
+                                </option>
+                              </select>
+
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={montoParte}
+                                onChange={(evento) => {
+                                  if (esPrimero) {
+                                    setMontoMixto1(
+                                      evento.target.value
+                                    );
+                                  } else {
+                                    setMontoMixto2(
+                                      evento.target.value
+                                    );
+                                  }
+                                }}
+                                placeholder="Monto"
+                                className="rounded-xl border border-slate-300 px-3 py-3 font-black"
+                              />
+                            </div>
+
+                            {metodoParte ===
+                            "EFECTIVO" ? (
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={recibidoParte}
+                                onChange={(evento) => {
+                                  if (esPrimero) {
+                                    setRecibidoMixto1(
+                                      evento.target.value
+                                    );
+                                  } else {
+                                    setRecibidoMixto2(
+                                      evento.target.value
+                                    );
+                                  }
+                                }}
+                                placeholder="Monto recibido"
+                                className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-3"
+                              />
+                            ) : (
+                              <input
+                                value={referenciaParte}
+                                onChange={(evento) => {
+                                  if (esPrimero) {
+                                    setReferenciaMixto1(
+                                      evento.target.value
+                                    );
+                                  } else {
+                                    setReferenciaMixto2(
+                                      evento.target.value
+                                    );
+                                  }
+                                }}
+                                placeholder={
+                                  metodoParte ===
+                                  "TARJETA"
+                                    ? "Operación / voucher"
+                                    : "N.º operación"
+                                }
+                                className="mt-3 w-full rounded-xl border border-slate-300 px-3 py-3"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      <div className="mt-4 flex items-center justify-between rounded-2xl bg-violet-100 px-4 py-3">
+                        <span className="font-bold text-violet-800">
+                          Total dividido
+                        </span>
+
+                        <span className="text-xl font-black text-violet-950">
+                          S/{" "}
+                          {(
+                            Number(
+                              montoMixto1 ||
+                                0
+                            ) +
+                            Number(
+                              montoMixto2 ||
+                                0
+                            )
+                          ).toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                   )}
 
@@ -1705,25 +2072,47 @@ export default function CajaPage() {
                 </div>
 
                 <div className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm">
-                  <p>
-                    <strong>Método:</strong>{" "}
-                    {cuentaSeleccionada.pagos[
-                      cuentaSeleccionada.pagos.length - 1
-                    ]?.metodo ?? "--"}
+                  <p className="font-black text-slate-900">
+                    Pagos registrados
                   </p>
 
-                  {cuentaSeleccionada.pagos[
-                    cuentaSeleccionada.pagos.length - 1
-                  ]?.referencia && (
-                    <p className="mt-1">
-                      <strong>Referencia:</strong>{" "}
-                      {
-                        cuentaSeleccionada.pagos[
-                          cuentaSeleccionada.pagos.length - 1
-                        ]?.referencia
-                      }
-                    </p>
-                  )}
+                  <div className="mt-2 space-y-2">
+                    {cuentaSeleccionada.pagos.length ===
+                    0 ? (
+                      <p className="text-slate-500">
+                        Sin pagos registrados.
+                      </p>
+                    ) : (
+                      cuentaSeleccionada.pagos.map(
+                        (pago) => (
+                          <div
+                            key={pago.id}
+                            className="flex items-start justify-between gap-3"
+                          >
+                            <div>
+                              <p className="font-bold">
+                                {pago.metodo}
+                              </p>
+
+                              {pago.referencia && (
+                                <p className="text-xs text-slate-500">
+                                  Ref:{" "}
+                                  {pago.referencia}
+                                </p>
+                              )}
+                            </div>
+
+                            <p className="font-black">
+                              S/{" "}
+                              {pago.monto.toFixed(
+                                2
+                              )}
+                            </p>
+                          </div>
+                        )
+                      )
+                    )}
+                  </div>
                 </div>
 
                 <p className="mt-6 text-center text-sm text-slate-500">

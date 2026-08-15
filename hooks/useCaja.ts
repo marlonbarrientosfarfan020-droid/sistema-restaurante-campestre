@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 
-type MetodoPago =
+export type MetodoPago =
   | "EFECTIVO"
   | "YAPE"
   | "PLIN"
@@ -17,25 +17,17 @@ export type CuentaCaja = {
   id: string;
   codigo: string;
   estado: string;
-
   subtotal: number;
   descuento: number;
   total: number;
-
-  metodoPagoPrevisto:
-    | MetodoPago
-    | null;
-
+  metodoPagoPrevisto: MetodoPago | null;
   fechaApertura: string;
-  fechaSolicitudCuenta:
-    | string
-    | null;
+  fechaSolicitudCuenta: string | null;
 
   mesa: {
     id: string;
     numero: number;
     nombre: string;
-
     zona: {
       id: string;
       nombre: string;
@@ -54,14 +46,12 @@ export type CuentaCaja = {
     estado: string;
     subtotal: number;
     fechaPedido: string;
-
     detalles: Array<{
       id: string;
       cantidad: number;
       precioUnitario: number;
       subtotal: number;
       observacion: string | null;
-
       producto: {
         id: string;
         codigo: string;
@@ -113,19 +103,14 @@ type RegistrarPagoDatos = {
 export function useCaja() {
   const [cuentas, setCuentas] =
     useState<CuentaCaja[]>([]);
-
   const [cuentaSeleccionada, setCuentaSeleccionada] =
     useState<CuentaCaja | null>(null);
-
   const [cargando, setCargando] =
     useState(true);
-
   const [procesando, setProcesando] =
     useState(false);
-
   const [mensaje, setMensaje] =
     useState("");
-
   const [error, setError] =
     useState("");
 
@@ -164,29 +149,22 @@ export function useCaja() {
         setCuentaSeleccionada(
           (actual) => {
             if (!actual) {
-              return (
-                nuevasCuentas[0] ??
-                null
-              );
+              return nuevasCuentas[0] ?? null;
             }
 
             return (
               nuevasCuentas.find(
                 (cuenta) =>
-                  cuenta.id ===
-                  actual.id
+                  cuenta.id === actual.id
               ) ??
               nuevasCuentas[0] ??
               null
             );
           }
         );
-      } catch (
-        errorDesconocido
-      ) {
+      } catch (errorDesconocido) {
         setError(
-          errorDesconocido instanceof
-            Error
+          errorDesconocido instanceof Error
             ? errorDesconocido.message
             : "Ocurrió un error cargando Caja."
         );
@@ -235,12 +213,9 @@ export function useCaja() {
       );
 
       return resultado.data;
-    } catch (
-      errorDesconocido
-    ) {
+    } catch (errorDesconocido) {
       setError(
-        errorDesconocido instanceof
-          Error
+        errorDesconocido instanceof Error
           ? errorDesconocido.message
           : "No se pudo cargar la cuenta."
       );
@@ -266,9 +241,7 @@ export function useCaja() {
               "Content-Type":
                 "application/json",
             },
-            body: JSON.stringify(
-              datos
-            ),
+            body: JSON.stringify(datos),
           }
         );
 
@@ -286,28 +259,18 @@ export function useCaja() {
         );
       }
 
-      setMensaje(
-        resultado.message
-      );
+      setMensaje(resultado.message);
 
-      if (
-        resultado.data
-          .pagoCompleto
-      ) {
-        await seleccionarCuenta(
-          datos.atencionId
-        );
-      }
+      await seleccionarCuenta(
+        datos.atencionId
+      );
 
       await cargarCuentas();
 
       return resultado.data;
-    } catch (
-      errorDesconocido
-    ) {
+    } catch (errorDesconocido) {
       setError(
-        errorDesconocido instanceof
-          Error
+        errorDesconocido instanceof Error
           ? errorDesconocido.message
           : "Ocurrió un error registrando el pago."
       );
@@ -354,23 +317,15 @@ export function useCaja() {
         );
       }
 
-      setMensaje(
-        resultado.message
-      );
-
-      setCuentaSeleccionada(
-        null
-      );
+      setMensaje(resultado.message);
+      setCuentaSeleccionada(null);
 
       await cargarCuentas();
 
       return true;
-    } catch (
-      errorDesconocido
-    ) {
+    } catch (errorDesconocido) {
       setError(
-        errorDesconocido instanceof
-          Error
+        errorDesconocido instanceof Error
           ? errorDesconocido.message
           : "Ocurrió un error liberando la mesa."
       );
@@ -388,14 +343,10 @@ export function useCaja() {
     procesando,
     mensaje,
     error,
-
-    recargar:
-      cargarCuentas,
-
+    recargar: cargarCuentas,
     seleccionarCuenta,
     registrarPago,
     liberarMesa,
-
     limpiarMensajes() {
       setMensaje("");
       setError("");

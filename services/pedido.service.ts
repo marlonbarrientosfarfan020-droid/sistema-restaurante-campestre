@@ -35,13 +35,16 @@ import type {
  *    ↓
  * ENTREGADO
  *
+ * En los estados permitidos también se puede ANULAR.
+ *
  * ============================================================
  */
 
 type EstadoOperacion =
   | "RECIBIDO"
   | "PREPARANDO"
-  | "ENTREGADO";
+  | "ENTREGADO"
+  | "ANULADO";
 
 const TRANSICIONES_OPERACION: Record<
   EstadoOperacion,
@@ -55,6 +58,9 @@ const TRANSICIONES_OPERACION: Record<
 
   ENTREGADO:
     EstadoPedido.ENTREGADO,
+
+  ANULADO:
+    EstadoPedido.ANULADO,
 };
 
 /*
@@ -70,6 +76,7 @@ const TRANSICIONES_OPERACION: Record<
  *
  * Así todavía podremos cerrarlos correctamente.
  */
+
 const TRANSICIONES_ENTREGA: Record<
   "EN_ENTREGA" | "ENTREGADO",
   EstadoPedido
@@ -157,6 +164,7 @@ export class PedidoService {
    * CREAR PEDIDO
    * ==========================================================
    */
+
   async crear(
     datos: CrearPedidoDTO
   ) {
@@ -224,6 +232,7 @@ export class PedidoService {
      * todos dentro de la misma mesa
      * y la misma atención.
      */
+
     const atencion =
       await pedidoRepository.obtenerAtencionActiva(
         atencionId,
@@ -242,6 +251,7 @@ export class PedidoService {
      * VALIDAR PRODUCTOS
      * ========================================================
      */
+
     const productoIds =
       Array.from(
         new Set(
@@ -284,11 +294,8 @@ export class PedidoService {
      * ========================================================
      * VALIDAR STOCK ACTUAL
      * ========================================================
-     *
-     * Esta validación mejora el mensaje al usuario.
-     * La validación definitiva se vuelve a realizar dentro
-     * de la transacción del repository para evitar sobreventa.
      */
+
     const productosPorId =
       new Map(
         productos.map(
@@ -304,6 +311,7 @@ export class PedidoService {
      * CALCULAR DETALLES
      * ========================================================
      */
+
     const detallesValidados =
       datos.detalles.map(
         (detalle) => {
@@ -387,6 +395,7 @@ export class PedidoService {
      * TOTAL DEL PEDIDO
      * ========================================================
      */
+
     const subtotal =
       Math.round(
         detallesValidados.reduce(
@@ -405,6 +414,7 @@ export class PedidoService {
      * GENERAR NÚMERO DE PEDIDO
      * ========================================================
      */
+
     const ultimoPedido =
       await pedidoRepository.obtenerUltimoPedido(
         sucursalId
@@ -446,6 +456,7 @@ export class PedidoService {
      * MOZO
      * → RECIBIDO
      */
+
     try {
       return await pedidoRepository.crear(
         {
@@ -533,9 +544,20 @@ export class PedidoService {
 
   /*
    * ==========================================================
+   * BANDEJA GENERAL DE PEDIDOS
+   * ==========================================================
+   */
+
+  async listarBandeja() {
+    return pedidoRepository.listarBandeja();
+  }
+
+  /*
+   * ==========================================================
    * LISTAR PEDIDOS POR ATENCIÓN
    * ==========================================================
    */
+
   async listarPorAtencion(
     atencionId: string
   ) {
@@ -559,6 +581,7 @@ export class PedidoService {
    * COCINA
    * ==========================================================
    */
+
   async listarParaCocina() {
     return pedidoRepository.listarParaCocina();
   }
@@ -567,10 +590,8 @@ export class PedidoService {
    * ==========================================================
    * ENTREGAS ANTIGUAS
    * ==========================================================
-   *
-   * Temporalmente mantenemos esto para
-   * pedidos existentes en LISTO o EN_ENTREGA.
    */
+
   async listarParaEntrega() {
     return pedidoRepository.listarParaEntrega();
   }
@@ -580,8 +601,6 @@ export class PedidoService {
    * CAMBIAR ESTADO OPERATIVO
    * ==========================================================
    *
-   * Esta función ahora sirve tanto para:
-   *
    * MOZO:
    * PENDIENTE_CONFIRMACION
    * → RECIBIDO
@@ -590,10 +609,15 @@ export class PedidoService {
    * RECIBIDO
    * → PREPARANDO
    *
-   * COCINA:
+   * ENTREGA:
    * PREPARANDO
    * → ENTREGADO
+   *
+   * ANULACIÓN:
+   * cualquier estado permitido por repository
+   * → ANULADO
    */
+
   async cambiarEstadoCocina(
     pedidoId: string,
     nuevoEstado: string
@@ -616,6 +640,7 @@ export class PedidoService {
         "RECIBIDO",
         "PREPARANDO",
         "ENTREGADO",
+        "ANULADO",
       ].includes(estado)
     ) {
       throw new AppError(
@@ -642,16 +667,8 @@ export class PedidoService {
    * ==========================================================
    * COMPATIBILIDAD DE ENTREGA
    * ==========================================================
-   *
-   * Esta función permanece mientras haya
-   * registros antiguos que utilicen:
-   *
-   * LISTO
-   * EN_ENTREGA
-   *
-   * Más adelante podemos retirar completamente
-   * el módulo antiguo de Entregas.
    */
+
   async cambiarEstadoEntrega(
     pedidoId: string,
     nuevoEstado: string,

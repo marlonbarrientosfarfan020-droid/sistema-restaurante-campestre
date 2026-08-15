@@ -44,17 +44,40 @@ export async function GET(
       new URL(request.url);
 
     const atencionId =
-      searchParams.get("atencionId") ?? "";
+      searchParams
+        .get("atencionId")
+        ?.trim() ?? "";
 
-    const pedidos =
-      await pedidoService.listarPorAtencion(
-        atencionId
+    /*
+     * Si viene atencionId:
+     * mantenemos el funcionamiento actual
+     * del ticket de una atención.
+     */
+    if (atencionId) {
+      const pedidos =
+        await pedidoService.listarPorAtencion(
+          atencionId
+        );
+
+      return NextResponse.json(
+        ok(
+          pedidos,
+          "Pedidos de la atención obtenidos correctamente."
+        )
       );
+    }
+
+    /*
+     * Si NO viene atencionId:
+     * devolvemos la bandeja general.
+     */
+    const pedidos =
+      await pedidoService.listarBandeja();
 
     return NextResponse.json(
       ok(
         pedidos,
-        "Pedidos obtenidos correctamente."
+        "Bandeja de pedidos obtenida correctamente."
       )
     );
   } catch (error) {
@@ -74,8 +97,11 @@ export async function POST(
         sucursalId: body.sucursalId,
         registradoPorId:
           body.registradoPorId,
-        origen: body.origen ?? "MOZO",
-        observacion: body.observacion,
+        origen:
+          body.origen ?? "MOZO",
+        observacion:
+          body.observacion,
+
         detalles: Array.isArray(
           body.detalles
         )
@@ -87,9 +113,11 @@ export async function POST(
               }) => ({
                 productoId:
                   detalle.productoId ?? "",
+
                 cantidad: Number(
                   detalle.cantidad ?? 0
                 ),
+
                 observacion:
                   detalle.observacion,
               })

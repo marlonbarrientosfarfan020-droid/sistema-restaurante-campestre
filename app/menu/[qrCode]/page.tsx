@@ -89,6 +89,13 @@ type ItemCarrito = {
   observacion: string;
 };
 
+type MetodoPagoPrevisto =
+  | "EFECTIVO"
+  | "YAPE"
+  | "PLIN"
+  | "TARJETA"
+  | "MIXTO";
+
 type PedidoCliente = {
   id: string;
   numero: string;
@@ -123,6 +130,7 @@ type AtencionActiva = {
   total: number | string;
   fechaApertura: string;
   fechaSolicitudCuenta?: string | null;
+  metodoPagoPrevisto?: MetodoPagoPrevisto | null;
 };
 
 function estadoPedidoVisual(
@@ -310,6 +318,14 @@ export default function MenuQRPage() {
   ] =
     useState(false);
 
+  const [
+    metodoPagoSeleccionado,
+    setMetodoPagoSeleccionado,
+  ] =
+    useState<MetodoPagoPrevisto | null>(
+      null
+    );
+
   const claveAtencionLocal =
     useMemo(
       () =>
@@ -470,6 +486,14 @@ export default function MenuQRPage() {
             setAtencion(
               actual
             );
+
+            if (
+              actual.metodoPagoPrevisto
+            ) {
+              setMetodoPagoSeleccionado(
+                actual.metodoPagoPrevisto
+              );
+            }
 
             if (
               claveAtencionLocal
@@ -815,6 +839,16 @@ export default function MenuQRPage() {
       return;
     }
 
+    if (
+      !atencion &&
+      !metodoPagoSeleccionado
+    ) {
+      setErrorPedido(
+        "Selecciona cómo pagarás al finalizar."
+      );
+      return;
+    }
+
     try {
       setEnviandoPedido(true);
       setMensajePedido("");
@@ -842,7 +876,8 @@ export default function MenuQRPage() {
               cantidadPersonas: 1,
 
               metodoPagoPrevisto:
-                null,
+                atencion?.metodoPagoPrevisto ??
+                metodoPagoSeleccionado,
             }),
           }
         );
@@ -865,6 +900,9 @@ export default function MenuQRPage() {
               | number
               | string;
             fechaApertura: string;
+            metodoPagoPrevisto?:
+              | MetodoPagoPrevisto
+              | null;
           };
         }>;
 
@@ -898,7 +936,18 @@ export default function MenuQRPage() {
           atencionActual.total,
         fechaApertura:
           atencionActual.fechaApertura,
+        metodoPagoPrevisto:
+          atencionActual.metodoPagoPrevisto ??
+          metodoPagoSeleccionado,
       });
+
+      if (
+        atencionActual.metodoPagoPrevisto
+      ) {
+        setMetodoPagoSeleccionado(
+          atencionActual.metodoPagoPrevisto
+        );
+      }
 
       if (
         claveAtencionLocal
@@ -1749,6 +1798,89 @@ export default function MenuQRPage() {
                 </span>
               </div>
 
+              {!atencion ? (
+                <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+                  <p className="text-xs font-black uppercase tracking-wider text-amber-700">
+                    Método de pago
+                  </p>
+                  <h3 className="mt-1 text-lg font-black text-slate-950">
+                    ¿Cómo pagarás al finalizar?
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Solo indícanos cómo piensas pagar. El pago se realiza al final en caja.
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {[
+                      ["EFECTIVO", "💵", "Efectivo"],
+                      ["YAPE", "📱", "Yape"],
+                      ["PLIN", "📲", "Plin"],
+                      ["TARJETA", "💳", "Tarjeta"],
+                      ["MIXTO", "🔀", "Mixto"],
+                    ].map(([valor, icono, texto]) => {
+                      const metodo =
+                        valor as MetodoPagoPrevisto;
+                      const seleccionado =
+                        metodoPagoSeleccionado === metodo;
+
+                      return (
+                        <button
+                          key={valor}
+                          type="button"
+                          onClick={() => {
+                            setMetodoPagoSeleccionado(
+                              metodo
+                            );
+                            setErrorPedido("");
+                          }}
+                          className={`rounded-2xl border-2 p-4 text-left transition active:scale-[0.98] ${
+                            seleccionado
+                              ? "border-amber-500 bg-white shadow-md ring-4 ring-amber-100"
+                              : "border-slate-200 bg-white hover:border-amber-300"
+                          }`}
+                        >
+                          <span className="text-2xl">
+                            {icono}
+                          </span>
+                          <p className="mt-2 font-black text-slate-950">
+                            {texto}
+                          </p>
+                          {seleccionado && (
+                            <p className="mt-1 text-xs font-black text-emerald-700">
+                              Seleccionado
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {!metodoPagoSeleccionado && (
+                    <p className="mt-3 text-sm font-bold text-amber-800">
+                      Selecciona una opción para enviar tu primer pedido.
+                    </p>
+                  )}
+                </section>
+              ) : (
+                <section className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="text-xs font-black uppercase tracking-wider text-emerald-700">
+                    Pago previsto
+                  </p>
+                  <p className="mt-1 font-black text-slate-950">
+                    {(
+                      atencion.metodoPagoPrevisto ??
+                      metodoPagoSeleccionado ??
+                      "REGISTRADO"
+                    )
+                      .toString()
+                      .replaceAll("_", " ")}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Se mantiene para los siguientes pedidos de esta atención.
+                  </p>
+                </section>
+              )}
+
               <button
                 type="button"
                 onClick={
@@ -1758,7 +1890,9 @@ export default function MenuQRPage() {
                   enviandoPedido ||
                   carrito.length ===
                     0 ||
-                  !puedePedir
+                  !puedePedir ||
+                  (!atencion &&
+                    !metodoPagoSeleccionado)
                 }
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-4 font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
               >

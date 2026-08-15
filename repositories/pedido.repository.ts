@@ -346,7 +346,80 @@ export class PedidoRepository {
       return pedido;
     });
   }
+listarBandeja() {
+  return prisma.pedido.findMany({
+    include: {
+      atencion: {
+        select: {
+          id: true,
+          codigo: true,
+          estado: true,
 
+          mesa: {
+            select: {
+              id: true,
+              numero: true,
+              nombre: true,
+
+              zona: {
+                select: {
+                  id: true,
+                  nombre: true,
+                },
+              },
+            },
+          },
+        },
+      },
+
+      registradoPor: {
+        select: {
+          id: true,
+          nombres: true,
+          apellidos: true,
+        },
+      },
+
+      entregadoPor: {
+        select: {
+          id: true,
+          nombres: true,
+          apellidos: true,
+        },
+      },
+
+      detalles: {
+        where: {
+          estado: {
+            not: EstadoDetallePedido.ANULADO,
+          },
+        },
+
+        include: {
+          producto: {
+            select: {
+              id: true,
+              codigo: true,
+              nombre: true,
+              imagenUrl: true,
+              tiempoPreparacion: true,
+            },
+          },
+        },
+
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+    },
+
+    orderBy: {
+      fechaPedido: "desc",
+    },
+
+    take: 200,
+  });
+}
   listarPorAtencion(atencionId: string) {
     return prisma.pedido.findMany({
       where: {
