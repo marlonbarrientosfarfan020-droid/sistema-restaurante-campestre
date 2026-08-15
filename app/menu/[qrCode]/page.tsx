@@ -307,6 +307,16 @@ export default function MenuQRPage() {
     useState("");
 
   const [
+    pedidoEnviado,
+    setPedidoEnviado,
+  ] =
+    useState<{
+      numero: string;
+    } | null>(
+      null
+    );
+
+  const [
     errorPedido,
     setErrorPedido,
   ] =
@@ -853,6 +863,7 @@ export default function MenuQRPage() {
       setEnviandoPedido(true);
       setMensajePedido("");
       setErrorPedido("");
+      setPedidoEnviado(null);
 
       const respuestaAtencion =
         await fetch(
@@ -1021,18 +1032,19 @@ export default function MenuQRPage() {
         false
       );
 
+      setPedidoEnviado({
+        numero:
+          resultadoPedido.data.numero,
+      });
+
       setMensajePedido(
-        `Pedido ${resultadoPedido.data.numero} enviado. Espera la confirmación del mozo.`
+        `Pedido ${resultadoPedido.data.numero} enviado correctamente.`
       );
 
       await cargarMenu();
 
       await cargarEstadoAtencion(
         menu.mesa.id
-      );
-
-      setMostrarPedidos(
-        true
       );
     } catch (
       errorDesconocido
@@ -1301,14 +1313,28 @@ export default function MenuQRPage() {
         errorPedido) && (
         <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
           <div
-            className={`rounded-2xl border px-5 py-4 font-bold ${
+            className={`flex items-start gap-3 rounded-2xl border px-5 py-4 font-bold ${
               mensajePedido
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-red-200 bg-red-50 text-red-800"
             }`}
           >
-            {mensajePedido ||
-              errorPedido}
+            {mensajePedido ? (
+              <CheckCircle2
+                size={22}
+                className="mt-0.5 shrink-0"
+              />
+            ) : (
+              <AlertCircle
+                size={22}
+                className="mt-0.5 shrink-0"
+              />
+            )}
+
+            <span>
+              {mensajePedido ||
+                errorPedido}
+            </span>
           </div>
         </div>
       )}
@@ -1654,6 +1680,81 @@ export default function MenuQRPage() {
             )}
           </span>
         </button>
+      )}
+
+      {pedidoEnviado && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[32px] bg-white p-6 text-center shadow-2xl md:p-8">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <CheckCircle2
+                size={46}
+              />
+            </div>
+
+            <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-emerald-600">
+              Pedido enviado
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black text-slate-950">
+              ¡Tu pedido fue enviado correctamente!
+            </h2>
+
+            <p className="mt-3 text-slate-600">
+              Pedido{" "}
+              <span className="font-black text-slate-950">
+                {pedidoEnviado.numero}
+              </span>
+              . Ahora está esperando la confirmación del mozo.
+            </p>
+
+            <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-left">
+              <p className="text-sm font-black text-orange-800">
+                Estado actual
+              </p>
+
+              <div className="mt-2 flex items-center gap-2 text-orange-700">
+                <Clock3
+                  size={18}
+                />
+                <span className="font-bold">
+                  Esperando confirmación
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPedidoEnviado(
+                    null
+                  );
+                  setMostrarPedidos(
+                    true
+                  );
+                }}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 font-black text-white transition hover:bg-slate-800"
+              >
+                <History
+                  size={19}
+                />
+                Ver mis pedidos
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPedidoEnviado(
+                    null
+                  )
+                }
+                className="rounded-2xl bg-amber-500 px-5 py-4 font-black text-slate-950 transition hover:bg-amber-400"
+              >
+                Seguir ordenando
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {mostrarCarrito && (
