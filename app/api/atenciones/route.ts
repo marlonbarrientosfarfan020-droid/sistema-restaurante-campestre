@@ -12,13 +12,41 @@ import {
 import { prisma } from "@/lib/prisma";
 import { fail, ok } from "@/lib/response";
 
-function generarCodigoAtencion(
-  numero: number
-) {
-  return `AT-${String(numero).padStart(
-    6,
-    "0"
-  )}`;
+function generarCodigoAtencion() {
+  const ahora = new Date();
+
+  const fecha = [
+    ahora.getFullYear(),
+    String(
+      ahora.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      ahora.getDate()
+    ).padStart(2, "0"),
+  ].join("");
+
+  const hora = [
+    String(
+      ahora.getHours()
+    ).padStart(2, "0"),
+    String(
+      ahora.getMinutes()
+    ).padStart(2, "0"),
+    String(
+      ahora.getSeconds()
+    ).padStart(2, "0"),
+    String(
+      ahora.getMilliseconds()
+    ).padStart(3, "0"),
+  ].join("");
+
+  const aleatorio =
+    Math.random()
+      .toString(36)
+      .slice(2, 6)
+      .toUpperCase();
+
+  return `AT-${fecha}-${hora}-${aleatorio}`;
 }
 
 export async function GET(
@@ -311,42 +339,25 @@ export async function POST(
             );
           }
 
-          const ultimo =
-            await tx.atencion.findFirst({
-              where: {
-                sucursalId,
-                codigo: {
-                  startsWith: "AT-",
-                },
-              },
-
-              orderBy: {
-                codigo: "desc",
-              },
-
-              select: {
-                codigo: true,
-              },
-            });
-
-          const ultimoNumero =
-            ultimo
-              ? Number(
-                  ultimo.codigo.replace(
-                    "AT-",
-                    ""
-                  )
-                )
-              : 0;
-
+          /*
+           * IMPORTANTE:
+           *
+           * Antes se buscaba el último código AT-xxxxxx
+           * y se intentaba convertir a número.
+           *
+           * En la base ya existen códigos históricos
+           * con formato AT-20260815-..., por lo que
+           * Number(...) devolvía NaN y terminaba
+           * intentando crear nuevamente AT-000001.
+           *
+           * Eso provocaba Prisma P2002:
+           * unique(sucursalId, codigo).
+           *
+           * Ahora generamos un código único por
+           * fecha + hora + milisegundos + sufijo.
+           */
           const codigo =
-            generarCodigoAtencion(
-              Number.isFinite(
-                ultimoNumero
-              )
-                ? ultimoNumero + 1
-                : 1
-            );
+            generarCodigoAtencion();
 
           const atencion =
             await tx.atencion.create({
