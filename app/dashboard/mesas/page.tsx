@@ -1151,18 +1151,79 @@ export default function MesasPage() {
                           </button>
 
                           <div className="grid grid-cols-2 gap-2 border-t border-black/10 bg-white/70 p-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                limpiarMensajesPedido();
-                                setMesaSeleccionada(
-                                  mesa
-                                );
-                              }}
-                              className="flex items-center justify-center rounded-xl bg-slate-950 px-3 py-3 text-sm font-black text-white transition hover:bg-slate-800"
-                            >
-                              Gestionar
-                            </button>
+                            {mesa.estado ===
+                            "PAGADA" ? (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  const confirmar =
+                                    window.confirm(
+                                      `¿Liberar ${mesa.nombre}? La atención quedará cerrada y la mesa volverá a LIBRE.`
+                                    );
+
+                                  if (
+                                    !confirmar
+                                  ) {
+                                    return;
+                                  }
+
+                                  try {
+                                    const respuesta =
+                                      await fetch(
+                                        `/api/mesas/${encodeURIComponent(
+                                          mesa.id
+                                        )}/liberar`,
+                                        {
+                                          method:
+                                            "POST",
+                                          cache:
+                                            "no-store",
+                                        }
+                                      );
+
+                                    const resultado =
+                                      await respuesta.json();
+
+                                    if (
+                                      !respuesta.ok ||
+                                      !resultado.success
+                                    ) {
+                                      throw new Error(
+                                        resultado.message ||
+                                          "No se pudo liberar la mesa."
+                                      );
+                                    }
+
+                                    await recargar();
+                                  } catch (
+                                    errorDesconocido
+                                  ) {
+                                    window.alert(
+                                      errorDesconocido instanceof
+                                        Error
+                                        ? errorDesconocido.message
+                                        : "No se pudo liberar la mesa."
+                                    );
+                                  }
+                                }}
+                                className="flex items-center justify-center rounded-xl bg-violet-600 px-3 py-3 text-sm font-black text-white transition hover:bg-violet-500"
+                              >
+                                Liberar
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  limpiarMensajesPedido();
+                                  setMesaSeleccionada(
+                                    mesa
+                                  );
+                                }}
+                                className="flex items-center justify-center rounded-xl bg-slate-950 px-3 py-3 text-sm font-black text-white transition hover:bg-slate-800"
+                              >
+                                Gestionar
+                              </button>
+                            )}
 
                             <Link
                               href="/dashboard/mesas/qr"

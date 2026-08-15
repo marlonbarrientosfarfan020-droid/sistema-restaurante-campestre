@@ -301,6 +301,24 @@ export default function MenuQRPage() {
     useState(false);
 
   const [
+    ocupandoMesa,
+    setOcupandoMesa,
+  ] =
+    useState(false);
+
+  const [
+    liberandoMesa,
+    setLiberandoMesa,
+  ] =
+    useState(false);
+
+  const [
+    cantidadPersonas,
+    setCantidadPersonas,
+  ] =
+    useState(1);
+
+  const [
     mensajePedido,
     setMensajePedido,
   ] =
@@ -716,9 +734,15 @@ export default function MenuQRPage() {
       "SOLICITO_CUENTA";
 
   const puedePedir =
+    Boolean(atencion) &&
     !cuentaSolicitada &&
-    menu?.mesa.estado !==
-      "PAGADA";
+    [
+      "OCUPADA",
+      "PEDIDO_PENDIENTE",
+      "CONSUMIENDO",
+    ].includes(
+      menu?.mesa.estado ?? ""
+    );
 
   const hayPedidosPendientes =
     pedidos.some(
@@ -828,14 +852,248 @@ export default function MenuQRPage() {
     );
   }
 
+  async function ocuparMesa() {
+    if (!menu) {
+      return;
+    }
+
+    if (
+      menu.mesa.estado !==
+      "LIBRE"
+    ) {
+      setErrorPedido(
+        "La mesa ya no se encuentra libre. Actualiza la pantalla."
+      );
+      return;
+    }
+
+    if (
+      !metodoPagoSeleccionado
+    ) {
+      setErrorPedido(
+        "Selecciona cómo pagarás al finalizar."
+      );
+      return;
+    }
+
+    try {
+      setOcupandoMesa(true);
+      setMensajePedido("");
+      setErrorPedido("");
+
+      const respuesta =
+        await fetch(
+          "/api/atenciones",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              mesaId:
+                menu.mesa.id,
+              sucursalId:
+                menu.restaurante
+                  .sucursal.id,
+              cantidadPersonas:
+                Math.max(
+                  1,
+                  Math.min(
+                    menu.mesa.capacidad,
+                    Number(
+                      cantidadPersonas
+                    ) || 1
+                  )
+                ),
+              metodoPagoPrevisto:
+                metodoPagoSeleccionado,
+            }),
+          }
+        );
+
+      const resultado =
+        (await respuesta.json()) as ApiResponse<{
+          creada: boolean;
+          atencion: AtencionActiva;
+        }>;
+
+      if (
+        !respuesta.ok ||
+        !resultado.success ||
+        !resultado.data
+      ) {
+        throw new Error(
+          resultado.message ||
+            "No se pudo ocupar la mesa."
+        );
+      }
+
+      setAtencion(
+        resultado.data.atencion
+      );
+
+      if (
+        claveAtencionLocal
+      ) {
+        window.localStorage.setItem(
+          claveAtencionLocal,
+          resultado.data.atencion.id
+        );
+      }
+
+      if (
+        claveCuentaLocal
+      ) {
+        window.localStorage.removeItem(
+          claveCuentaLocal
+        );
+      }
+
+      setCuentaSolicitadaLocal(
+        false
+      );
+
+      setMensajePedido(
+        `${menu.mesa.nombre} ocupada correctamente. Ya puedes realizar tu pedido.`
+      );
+
+      await cargarMenu();
+
+      await cargarEstadoAtencion(
+        menu.mesa.id
+      );
+    } catch (
+      errorDesconocido
+    ) {
+      setErrorPedido(
+        errorDesconocido instanceof
+          Error
+          ? errorDesconocido.message
+          : "No se pudo ocupar la mesa."
+      );
+    } finally {
+      setOcupandoMesa(false);
+    }
+  }
+
+  async function liberarMesaDesdeQr() {
+    if (!menu) {
+      return;
+    }
+
+    if (
+      menu.mesa.estado !==
+      "PAGADA"
+    ) {
+      setErrorPedido(
+        "La mesa solo puede liberarse después de completar el pago."
+      );
+      return;
+    }
+
+    const confirmado =
+      window.confirm(
+        `¿Liberar ${menu.mesa.nombre}? La atención quedará cerrada y la mesa estará disponible para un nuevo cliente.`
+      );
+
+    if (!confirmado) {
+      return;
+    }
+
+    try {
+      setLiberandoMesa(true);
+      setMensajePedido("");
+      setErrorPedido("");
+
+      const respuesta =
+        await fetch(
+          `/api/mesas/${encodeURIComponent(
+            menu.mesa.id
+          )}/liberar`,
+          {
+            method: "POST",
+            cache: "no-store",
+          }
+        );
+
+      const resultado =
+        (await respuesta.json()) as ApiResponse<{
+          liberada: boolean;
+        }>;
+
+      if (
+        !respuesta.ok ||
+        !resultado.success
+      ) {
+        throw new Error(
+          resultado.message ||
+            "No se pudo liberar la mesa."
+        );
+      }
+
+      if (
+        claveAtencionLocal
+      ) {
+        window.localStorage.removeItem(
+          claveAtencionLocal
+        );
+      }
+
+      if (
+        claveCuentaLocal
+      ) {
+        window.localStorage.removeItem(
+          claveCuentaLocal
+        );
+      }
+
+      setAtencion(null);
+      setPedidos([]);
+      setCarrito([]);
+      setMetodoPagoSeleccionado(
+        null
+      );
+      setCuentaSolicitadaLocal(
+        false
+      );
+      setMostrarPedidos(false);
+      setMostrarCarrito(false);
+
+      setMensajePedido(
+        `${menu.mesa.nombre} liberada correctamente. Ya está disponible para un nuevo cliente.`
+      );
+
+      await cargarMenu();
+    } catch (
+      errorDesconocido
+    ) {
+      setErrorPedido(
+        errorDesconocido instanceof
+          Error
+          ? errorDesconocido.message
+          : "No se pudo liberar la mesa."
+      );
+    } finally {
+      setLiberandoMesa(false);
+    }
+  }
+
   async function enviarPedido() {
     if (!menu) {
       return;
     }
 
+    if (!atencion) {
+      setErrorPedido(
+        "Primero debes ocupar la mesa antes de enviar un pedido."
+      );
+      return;
+    }
+
     if (!puedePedir) {
       setErrorPedido(
-        "La cuenta ya fue solicitada. No puedes registrar un nuevo pedido."
+        "La mesa no está disponible para registrar nuevos pedidos."
       );
       return;
     }
@@ -845,16 +1103,6 @@ export default function MenuQRPage() {
     ) {
       setErrorPedido(
         "Agrega al menos un producto al pedido."
-      );
-      return;
-    }
-
-    if (
-      !atencion &&
-      !metodoPagoSeleccionado
-    ) {
-      setErrorPedido(
-        "Selecciona cómo pagarás al finalizar."
       );
       return;
     }
@@ -1362,6 +1610,211 @@ export default function MenuQRPage() {
         </div>
       )}
 
+      {menu.mesa.estado ===
+        "LIBRE" && (
+        <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
+          <section className="overflow-hidden rounded-[30px] border border-amber-200 bg-white shadow-lg">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-slate-950 md:p-6">
+              <p className="text-xs font-black uppercase tracking-[0.2em]">
+                Mesa disponible
+              </p>
+
+              <h2 className="mt-1 text-2xl font-black">
+                Ocupar {menu.mesa.nombre}
+              </h2>
+
+              <p className="mt-1 text-sm font-semibold">
+                Antes del primer pedido, inicia la atención de esta mesa.
+              </p>
+            </div>
+
+            <div className="space-y-5 p-5 md:p-6">
+              <div>
+                <label className="mb-2 block text-sm font-black text-slate-700">
+                  Cantidad de personas
+                </label>
+
+                <input
+                  type="number"
+                  min={1}
+                  max={
+                    menu.mesa.capacidad
+                  }
+                  value={
+                    cantidadPersonas
+                  }
+                  onChange={(evento) =>
+                    setCantidadPersonas(
+                      Math.max(
+                        1,
+                        Math.min(
+                          menu.mesa
+                            .capacidad,
+                          Number(
+                            evento.target
+                              .value
+                          ) || 1
+                        )
+                      )
+                    )
+                  }
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-lg font-black outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-black text-slate-700">
+                  ¿Cómo pagarás al finalizar?
+                </p>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Es el método previsto. El pago real se registra al final en Caja.
+                </p>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  {[
+                    ["EFECTIVO", "💵", "Efectivo"],
+                    ["YAPE", "📱", "Yape"],
+                    ["PLIN", "📲", "Plin"],
+                    ["TARJETA", "💳", "Tarjeta"],
+                    ["MIXTO", "🔀", "Mixto"],
+                  ].map(
+                    ([
+                      valor,
+                      icono,
+                      texto,
+                    ]) => {
+                      const metodo =
+                        valor as MetodoPagoPrevisto;
+
+                      const seleccionado =
+                        metodoPagoSeleccionado ===
+                        metodo;
+
+                      return (
+                        <button
+                          key={
+                            valor
+                          }
+                          type="button"
+                          onClick={() => {
+                            setMetodoPagoSeleccionado(
+                              metodo
+                            );
+                            setErrorPedido(
+                              ""
+                            );
+                          }}
+                          className={`rounded-2xl border-2 p-4 text-left transition ${
+                            seleccionado
+                              ? "border-amber-500 bg-amber-50 ring-4 ring-amber-100"
+                              : "border-slate-200 bg-white hover:border-amber-300"
+                          }`}
+                        >
+                          <span className="text-2xl">
+                            {icono}
+                          </span>
+
+                          <p className="mt-2 font-black text-slate-950">
+                            {texto}
+                          </p>
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  ocuparMesa
+                }
+                disabled={
+                  ocupandoMesa ||
+                  !metodoPagoSeleccionado
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-lg font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {ocupandoMesa ? (
+                  <>
+                    <LoaderCircle
+                      size={21}
+                      className="animate-spin"
+                    />
+                    Ocupando mesa...
+                  </>
+                ) : (
+                  <>
+                    <UtensilsCrossed
+                      size={21}
+                    />
+                    Ocupar mesa e iniciar atención
+                  </>
+                )}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {menu.mesa.estado ===
+        "PAGADA" && (
+        <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
+          <section className="rounded-[30px] border border-emerald-200 bg-emerald-50 p-5 shadow-sm md:p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                <CheckCircle2
+                  size={26}
+                />
+              </div>
+
+              <div className="flex-1">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
+                  Cuenta pagada
+                </p>
+
+                <h2 className="mt-1 text-2xl font-black text-slate-950">
+                  Esta atención ya terminó
+                </h2>
+
+                <p className="mt-2 text-sm text-slate-600">
+                  Libera la mesa para cerrar la atención y dejarla lista para el siguiente cliente.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={
+                    liberarMesaDesdeQr
+                  }
+                  disabled={
+                    liberandoMesa
+                  }
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-4 font-black text-white transition hover:bg-violet-500 disabled:opacity-50 sm:w-auto"
+                >
+                  {liberandoMesa ? (
+                    <>
+                      <LoaderCircle
+                        size={20}
+                        className="animate-spin"
+                      />
+                      Liberando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2
+                        size={20}
+                      />
+                      Liberar mesa
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
       <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-6">
         {pedidos.length >
           0 && (
@@ -1485,12 +1938,15 @@ export default function MenuQRPage() {
                 )
               }
               placeholder={
-                cuentaSolicitada
-                  ? "Cuenta solicitada"
-                  : "Buscar un plato o bebida..."
+                menu.mesa.estado ===
+                "LIBRE"
+                  ? "Primero ocupa la mesa"
+                  : cuentaSolicitada
+                    ? "Cuenta solicitada"
+                    : "Buscar un plato o bebida..."
               }
               disabled={
-                cuentaSolicitada
+                !puedePedir
               }
               className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 outline-none shadow-sm focus:border-amber-500 focus:ring-4 focus:ring-amber-100 disabled:bg-slate-200 disabled:text-slate-500"
             />
@@ -1505,7 +1961,7 @@ export default function MenuQRPage() {
                 )
               }
               disabled={
-                cuentaSolicitada
+                !puedePedir
               }
               className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-black ${
                 !categoriaSeleccionada
@@ -1524,7 +1980,7 @@ export default function MenuQRPage() {
                   }
                   type="button"
                   disabled={
-                    cuentaSolicitada
+                    !puedePedir
                   }
                   onClick={() =>
                     setCategoriaSeleccionada(

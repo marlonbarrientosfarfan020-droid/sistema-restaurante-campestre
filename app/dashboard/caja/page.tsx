@@ -41,6 +41,25 @@ type MetodoCaja =
   | "TARJETA"
   | "MIXTO";
 
+type TipoComprobanteCaja =
+  | "NOTA_VENTA"
+  | "BOLETA"
+  | "FACTURA";
+
+function etiquetaComprobante(
+  tipo: TipoComprobanteCaja
+) {
+  if (tipo === "FACTURA") {
+    return "Factura";
+  }
+
+  if (tipo === "BOLETA") {
+    return "Boleta";
+  }
+
+  return "Nota de Venta";
+}
+
 type ApiResponse<T> = {
   success: boolean;
   message: string;
@@ -49,6 +68,7 @@ type ApiResponse<T> = {
 
 type NotaVentaCaja = {
   id: string;
+  tipo?: TipoComprobanteCaja;
   numero: string;
   atencionId: string;
   total: string | number;
@@ -241,6 +261,14 @@ export default function CajaPage() {
     mostrarFormularioNota,
     setMostrarFormularioNota,
   ] = useState(false);
+
+  const [
+    tipoComprobante,
+    setTipoComprobante,
+  ] =
+    useState<TipoComprobanteCaja>(
+      "BOLETA"
+    );
 
   const [
     clienteNombre,
@@ -512,6 +540,54 @@ export default function CajaPage() {
       return;
     }
 
+    if (
+      tipoComprobante ===
+      "FACTURA"
+    ) {
+      if (
+        !/^\d{11}$/.test(
+          clienteDocumento.trim()
+        )
+      ) {
+        setMensajeNota(
+          "Para la factura ingresa un RUC válido de 11 dígitos."
+        );
+        return;
+      }
+
+      if (
+        !clienteNombre.trim()
+      ) {
+        setMensajeNota(
+          "La razón social es obligatoria para la factura."
+        );
+        return;
+      }
+
+      if (
+        !clienteDireccion.trim()
+      ) {
+        setMensajeNota(
+          "La dirección fiscal es obligatoria para la factura."
+        );
+        return;
+      }
+    }
+
+    if (
+      tipoComprobante ===
+        "BOLETA" &&
+      clienteDocumento.trim() &&
+      !/^\d{8}$/.test(
+        clienteDocumento.trim()
+      )
+    ) {
+      setMensajeNota(
+        "Si registras DNI para la boleta, debe tener 8 dígitos."
+      );
+      return;
+    }
+
     try {
       setGenerandoNota(
         true
@@ -523,7 +599,7 @@ export default function CajaPage() {
 
       const respuesta =
         await fetch(
-          "/api/comprobantes",
+          "/api/comprobantes/emitir",
           {
             method:
               "POST",
@@ -537,6 +613,9 @@ export default function CajaPage() {
               JSON.stringify({
                 atencionId:
                   cuentaSeleccionada.id,
+
+                tipo:
+                  tipoComprobante,
 
                 clienteNombre:
                   clienteNombre.trim() ||
@@ -563,7 +642,7 @@ export default function CajaPage() {
       ) {
         throw new Error(
           resultado.message ||
-            "No se pudo generar la Nota de Venta."
+            "No se pudo generar el comprobante."
         );
       }
 
@@ -572,7 +651,9 @@ export default function CajaPage() {
       );
 
       setMensajeNota(
-        `Nota de Venta ${resultado.data.numero} generada correctamente.`
+        `${etiquetaComprobante(
+          tipoComprobante
+        )} ${resultado.data.numero} generada correctamente.`
       );
 
       setMostrarFormularioNota(
@@ -596,7 +677,7 @@ export default function CajaPage() {
       setMensajeNota(
         errorDesconocido instanceof Error
           ? errorDesconocido.message
-          : "No se pudo generar la Nota de Venta."
+          : "No se pudo generar el comprobante."
       );
     } finally {
       setGenerandoNota(
@@ -1283,6 +1364,47 @@ export default function CajaPage() {
                     </p>
                   </div>
 
+                  <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <label className="text-xs font-black uppercase tracking-wider text-amber-700">
+                      Comprobante solicitado
+                    </label>
+
+                    <select
+                      value={
+                        tipoComprobante
+                      }
+                      onChange={(evento) => {
+                        setTipoComprobante(
+                          evento.target
+                            .value as TipoComprobanteCaja
+                        );
+                        setNotaVenta(
+                          null
+                        );
+                        setMensajeNota(
+                          ""
+                        );
+                      }}
+                      className="mt-2 w-full rounded-xl border border-amber-300 bg-white px-3 py-3 font-black text-slate-900 outline-none"
+                    >
+                      <option value="BOLETA">
+                        Boleta
+                      </option>
+                      <option value="FACTURA">
+                        Factura
+                      </option>
+                      <option value="NOTA_VENTA">
+                        {etiquetaComprobante(
+                      tipoComprobante
+                    )}
+                      </option>
+                    </select>
+
+                    <p className="mt-2 text-xs text-amber-800">
+                      El comprobante y el método de pago son datos distintos. Ejemplo: Factura + Yape.
+                    </p>
+                  </div>
+
                   <div className="mt-5 grid grid-cols-2 gap-3">
                     {METODOS.map(
                       (item) => (
@@ -1649,7 +1771,9 @@ export default function CajaPage() {
                       {notaVenta ? (
                         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                           <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">
-                            Nota de Venta generada
+                            {etiquetaComprobante(
+                              tipoComprobante
+                            )} generada
                           </p>
 
                           <p className="mt-1 text-2xl font-black text-slate-950">
@@ -1686,7 +1810,7 @@ export default function CajaPage() {
                             size={20}
                           />
 
-                          Generar Nota de Venta
+                          Emitir comprobante
                         </button>
                       )}
 
@@ -1789,11 +1913,17 @@ export default function CajaPage() {
                   </p>
 
                   <h2 className="mt-1 text-2xl font-black text-slate-950">
-                    Datos del cliente
+                    Datos del comprobante
                   </h2>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Los campos son opcionales. Si los dejas vacíos, se emitirá para Cliente general.
+                    {tipoComprobante ===
+                    "FACTURA"
+                      ? "Para factura completa RUC, razón social y dirección fiscal."
+                      : tipoComprobante ===
+                          "BOLETA"
+                        ? "Para boleta puedes registrar DNI y nombre del cliente."
+                        : "Para Nota de Venta los datos del cliente son opcionales."}
                   </p>
                 </div>
 
@@ -1816,6 +1946,38 @@ export default function CajaPage() {
               </header>
 
               <div className="space-y-5 p-5 md:p-6">
+                <div>
+                  <label className="mb-2 block text-sm font-black text-slate-700">
+                    Tipo de comprobante
+                  </label>
+
+                  <select
+                    value={
+                      tipoComprobante
+                    }
+                    onChange={(evento) =>
+                      setTipoComprobante(
+                        evento.target
+                          .value as TipoComprobanteCaja
+                      )
+                    }
+                    disabled={
+                      generandoNota
+                    }
+                    className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 font-black outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+                  >
+                    <option value="BOLETA">
+                      Boleta
+                    </option>
+                    <option value="FACTURA">
+                      Factura
+                    </option>
+                    <option value="NOTA_VENTA">
+                      Nota de Venta
+                    </option>
+                  </select>
+                </div>
+
                 <div className="rounded-2xl bg-slate-950 p-5 text-white">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -1892,7 +2054,15 @@ export default function CajaPage() {
                     maxLength={
                       20
                     }
-                    placeholder="DNI / RUC / otro"
+                    placeholder={
+                      tipoComprobante ===
+                      "FACTURA"
+                        ? "RUC de 11 dígitos"
+                        : tipoComprobante ===
+                            "BOLETA"
+                          ? "DNI de 8 dígitos"
+                          : "DNI / RUC / otro"
+                    }
                     disabled={
                       generandoNota
                     }
@@ -1970,7 +2140,10 @@ export default function CajaPage() {
                         <FilePlus2
                           size={20}
                         />
-                        Generar Nota
+                        Generar{" "}
+                        {etiquetaComprobante(
+                          tipoComprobante
+                        )}
                       </>
                     )}
                   </button>
