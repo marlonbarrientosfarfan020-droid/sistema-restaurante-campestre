@@ -1514,10 +1514,10 @@ export default function PedidosPage() {
 
                           {/* CONFIRMAR */}
 
-                          {(pedido.estado ===
-                            "PENDIENTE_CONFIRMACION" ||
-                            pedido.estado ===
-                              "NUEVO") && (
+                         {(String(pedido.estado) ===
+  "PENDIENTE_CONFIRMACION" ||
+  pedido.estado ===
+    "NUEVO") && (
 
                             <BotonEstado
                               procesando={
