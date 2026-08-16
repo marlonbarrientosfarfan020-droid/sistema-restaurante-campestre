@@ -1,27 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LoaderCircle } from "lucide-react";
-import MozoAppNavigation from "@/components/mozo/MozoAppNavigation";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-type RolSesion =
-  | "SUPERADMIN"
-  | "ADMINISTRADOR"
-  | "CAJERO"
-  | "MOZO"
-  | "COCINA"
-  | "BARRA"
-  | "GERENTE";
+import {
+  LoaderCircle,
+} from "lucide-react";
 
-type SesionActual = {
-  sub: string;
-  sucursalId: string;
-  nombres: string;
-  apellidos: string;
-  correo: string;
-  rol: RolSesion;
-  exp: number;
-};
+import DashboardRoleNavigation, {
+  type SesionActual,
+} from "@/components/dashboard/DashboardRoleNavigation";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -34,37 +24,68 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sesion, setSesion] = useState<SesionActual | null>(null);
-  const [cargando, setCargando] = useState(true);
+  const [
+    sesion,
+    setSesion,
+  ] =
+    useState<SesionActual | null>(
+      null
+    );
+
+  const [
+    cargando,
+    setCargando,
+  ] =
+    useState(true);
 
   useEffect(() => {
     async function cargarSesion() {
       try {
-        const respuesta = await fetch("/api/auth/me", {
-          method: "GET",
-          cache: "no-store",
-        });
+        const respuesta =
+          await fetch(
+            "/api/auth/me",
+            {
+              method:
+                "GET",
+              cache:
+                "no-store",
+            }
+          );
 
         const resultado =
           (await respuesta.json()) as ApiResponse<SesionActual>;
 
-        if (!respuesta.ok || !resultado.success || !resultado.data) {
-          window.location.href = "/login";
+        if (
+          !respuesta.ok ||
+          !resultado.success ||
+          !resultado.data
+        ) {
+          window.location.href =
+            "/login";
+
           return;
         }
 
-        setSesion(resultado.data);
+        setSesion(
+          resultado.data
+        );
       } catch {
-        window.location.href = "/login";
+        window.location.href =
+          "/login";
       } finally {
-        setCargando(false);
+        setCargando(
+          false
+        );
       }
     }
 
     cargarSesion();
   }, []);
 
-  if (cargando) {
+  if (
+    cargando ||
+    !sesion
+  ) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100">
         <LoaderCircle
@@ -75,13 +96,11 @@ export default function DashboardLayout({
     );
   }
 
-  if (sesion?.rol === "MOZO") {
-    return (
-      <MozoAppNavigation sesion={sesion}>
-        {children}
-      </MozoAppNavigation>
-    );
-  }
-
-  return <>{children}</>;
+  return (
+    <DashboardRoleNavigation
+      sesion={sesion}
+    >
+      {children}
+    </DashboardRoleNavigation>
+  );
 }
