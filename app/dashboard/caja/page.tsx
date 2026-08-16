@@ -262,13 +262,14 @@ export default function CajaPage() {
     setMostrarFormularioNota,
   ] = useState(false);
 
- const [
-  tipoComprobante,
-  setTipoComprobante,
-] =
-  useState<TipoComprobanteCaja>(
-    "NOTA_VENTA"
-  );
+  const [
+    tipoComprobante,
+    setTipoComprobante,
+  ] =
+    useState<TipoComprobanteCaja>(
+      "BOLETA"
+    );
+
   const [
     clienteNombre,
     setClienteNombre,
@@ -1386,17 +1387,17 @@ export default function CajaPage() {
                       }}
                       className="mt-2 w-full rounded-xl border border-amber-300 bg-white px-3 py-3 font-black text-slate-900 outline-none"
                     >
-                     <option value="NOTA_VENTA">
-  Ticket de consumo
-</option>
-
-<option value="BOLETA">
-  Boleta electrónica
-</option>
-
-<option value="FACTURA">
-  Factura electrónica
-</option>
+                      <option value="BOLETA">
+                        Boleta
+                      </option>
+                      <option value="FACTURA">
+                        Factura
+                      </option>
+                      <option value="NOTA_VENTA">
+                        {etiquetaComprobante(
+                      tipoComprobante
+                    )}
+                      </option>
                     </select>
 
                     <p className="mt-2 text-xs text-amber-800">

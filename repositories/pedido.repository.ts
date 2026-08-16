@@ -701,10 +701,10 @@ listarBandeja() {
           EstadoPedido.ANULADO,
         ],
 
-        PREPARANDO: [
-          EstadoPedido.ENTREGADO,
-          EstadoPedido.ANULADO,
-        ],
+       PREPARANDO: [
+  EstadoPedido.LISTO,
+  EstadoPedido.ANULADO,
+],
 
         /*
          * Estados heredados.
@@ -712,9 +712,9 @@ listarBandeja() {
          * antiguos puedan terminar su ciclo.
          */
         LISTO: [
-          EstadoPedido.ENTREGADO,
-          EstadoPedido.ANULADO,
-        ],
+  EstadoPedido.EN_ENTREGA,
+  EstadoPedido.ANULADO,
+],
 
         EN_ENTREGA: [
           EstadoPedido.ENTREGADO,

@@ -43,7 +43,7 @@ import type {
 type EstadoOperacion =
   | "RECIBIDO"
   | "PREPARANDO"
-  | "ENTREGADO"
+  | "LISTO"
   | "ANULADO";
 
 const TRANSICIONES_OPERACION: Record<
@@ -56,8 +56,8 @@ const TRANSICIONES_OPERACION: Record<
   PREPARANDO:
     EstadoPedido.PREPARANDO,
 
-  ENTREGADO:
-    EstadoPedido.ENTREGADO,
+  LISTO:
+    EstadoPedido.LISTO,
 
   ANULADO:
     EstadoPedido.ANULADO,
@@ -618,51 +618,50 @@ export class PedidoService {
    * → ANULADO
    */
 
-  async cambiarEstadoCocina(
-    pedidoId: string,
-    nuevoEstado: string
-  ) {
-    const id =
-      pedidoId?.trim();
+async cambiarEstadoCocina(
+  pedidoId: string,
+  nuevoEstado: string
+) {
+  const id =
+    pedidoId?.trim();
 
-    const estado =
-      nuevoEstado?.trim() as EstadoOperacion;
+  const estado =
+    nuevoEstado?.trim() as EstadoOperacion;
 
-    if (!id) {
-      throw new AppError(
-        "El pedido es obligatorio.",
-        400
-      );
-    }
-
-    if (
-      ![
-        "RECIBIDO",
-        "PREPARANDO",
-        "ENTREGADO",
-        "ANULADO",
-      ].includes(estado)
-    ) {
-      throw new AppError(
-        "El estado solicitado no es válido para el pedido.",
-        400
-      );
-    }
-
-    try {
-      return await pedidoRepository.actualizarEstado(
-        id,
-        TRANSICIONES_OPERACION[
-          estado
-        ]
-      );
-    } catch (error) {
-      manejarErrorEstadoPedido(
-        error
-      );
-    }
+  if (!id) {
+    throw new AppError(
+      "El pedido es obligatorio.",
+      400
+    );
   }
 
+  if (
+    ![
+      "RECIBIDO",
+      "PREPARANDO",
+      "LISTO",
+      "ANULADO",
+    ].includes(estado)
+  ) {
+    throw new AppError(
+      "El estado solicitado no es válido para el pedido.",
+      400
+    );
+  }
+
+  try {
+    return await pedidoRepository.actualizarEstado(
+      id,
+      TRANSICIONES_OPERACION[
+        estado
+      ]
+    );
+  } catch (error) {
+    manejarErrorEstadoPedido(
+      error
+    );
+  }
+}
   /*
    * ==========================================================
    * COMPATIBILIDAD DE ENTREGA

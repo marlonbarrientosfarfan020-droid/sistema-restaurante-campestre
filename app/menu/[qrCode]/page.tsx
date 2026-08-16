@@ -555,40 +555,6 @@ export default function MenuQRPage() {
                 )
               : null;
 
-          /*
-           * Si la mesa ya está LIBRE, no recuperamos
-           * pedidos históricos del navegador.
-           * Es una nueva sesión de cliente.
-           */
-          if (
-            menu?.mesa.estado ===
-              "LIBRE"
-          ) {
-            setAtencion(null);
-            setPedidos([]);
-            setCuentaSolicitadaLocal(
-              false
-            );
-
-            if (
-              claveAtencionLocal
-            ) {
-              window.localStorage.removeItem(
-                claveAtencionLocal
-              );
-            }
-
-            if (
-              claveCuentaLocal
-            ) {
-              window.localStorage.removeItem(
-                claveCuentaLocal
-              );
-            }
-
-            return;
-          }
-
           if (
             atencionGuardada
           ) {
@@ -612,8 +578,6 @@ export default function MenuQRPage() {
       [
         cargarPedidos,
         claveAtencionLocal,
-        claveCuentaLocal,
-        menu?.mesa.estado,
       ]
     );
 
@@ -661,65 +625,6 @@ export default function MenuQRPage() {
   }, [
     menu?.mesa.id,
     cargarEstadoAtencion,
-    claveCuentaLocal,
-  ]);
-
-  /*
-   * NUEVA SESIÓN DE CLIENTE
-   *
-   * Si Caja o el mozo libera la mesa desde otro equipo,
-   * este celular puede conservar en localStorage la atención
-   * anterior. El backend es la fuente de verdad:
-   *
-   * MESA LIBRE = no debe mostrarse ningún consumo anterior.
-   */
-  useEffect(() => {
-    if (
-      !menu ||
-      menu.mesa.estado !==
-        "LIBRE"
-    ) {
-      return;
-    }
-
-    setAtencion(null);
-    setPedidos([]);
-    setCarrito([]);
-
-    setCuentaSolicitadaLocal(
-      false
-    );
-
-    setMostrarPedidos(false);
-    setMostrarCarrito(false);
-    setPedidoEnviado(null);
-
-    setMetodoPagoSeleccionado(
-      null
-    );
-
-    setCantidadPersonas(1);
-    setBusqueda("");
-    setCategoriaSeleccionada("");
-
-    if (
-      claveAtencionLocal
-    ) {
-      window.localStorage.removeItem(
-        claveAtencionLocal
-      );
-    }
-
-    if (
-      claveCuentaLocal
-    ) {
-      window.localStorage.removeItem(
-        claveCuentaLocal
-      );
-    }
-  }, [
-    menu?.mesa.estado,
-    claveAtencionLocal,
     claveCuentaLocal,
   ]);
 
@@ -824,11 +729,9 @@ export default function MenuQRPage() {
     );
 
   const cuentaSolicitada =
-    menu?.mesa.estado !==
-      "LIBRE" &&
-    (cuentaSolicitadaLocal ||
-      menu?.mesa.estado ===
-        "SOLICITO_CUENTA");
+    cuentaSolicitadaLocal ||
+    menu?.mesa.estado ===
+      "SOLICITO_CUENTA";
 
   const puedePedir =
     Boolean(atencion) &&
@@ -1617,9 +1520,8 @@ export default function MenuQRPage() {
               </div>
             </div>
 
-            {menu.mesa.estado !==
-              "LIBRE" &&
-              pedidos.length > 0 && (
+            {pedidos.length >
+              0 && (
               <button
                 type="button"
                 onClick={() =>
@@ -1718,32 +1620,15 @@ export default function MenuQRPage() {
               </p>
 
               <h2 className="mt-1 text-2xl font-black">
-                Nueva atención · {menu.mesa.nombre}
+                Ocupar {menu.mesa.nombre}
               </h2>
 
               <p className="mt-1 text-sm font-semibold">
-                Esta mesa está libre. Inicia una nueva atención para comenzar a pedir.
+                Antes del primer pedido, inicia la atención de esta mesa.
               </p>
             </div>
 
             <div className="space-y-5 p-5 md:p-6">
-              <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                <CheckCircle2
-                  size={21}
-                  className="mt-0.5 shrink-0 text-emerald-600"
-                />
-
-                <div>
-                  <p className="font-black text-emerald-900">
-                    Atención nueva
-                  </p>
-
-                  <p className="mt-1 text-xs leading-5 text-emerald-700">
-                    No tienes consumos pendientes. Los pedidos de clientes anteriores no forman parte de esta atención.
-                  </p>
-                </div>
-              </div>
-
               <div>
                 <label className="mb-2 block text-sm font-black text-slate-700">
                   Cantidad de personas
@@ -1931,9 +1816,8 @@ export default function MenuQRPage() {
       )}
 
       <div className="mx-auto max-w-6xl space-y-5 p-4 md:p-6">
-        {menu.mesa.estado !==
-          "LIBRE" &&
-          pedidos.length > 0 && (
+        {pedidos.length >
+          0 && (
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
