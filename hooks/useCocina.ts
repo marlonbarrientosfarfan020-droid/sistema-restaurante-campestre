@@ -18,26 +18,41 @@ type ApiResponse<T> = {
 
 type EstadoCocina =
   | "PREPARANDO"
-  | "ENTREGADO";
+  | "LISTO";
 
 export function useCocina() {
-  const [pedidos, setPedidos] =
-    useState<PedidoResumen[]>([]);
+  const [
+    pedidos,
+    setPedidos,
+  ] =
+    useState<PedidoResumen[]>(
+      []
+    );
 
-  const [cargando, setCargando] =
+  const [
+    cargando,
+    setCargando,
+  ] =
     useState(true);
 
   const [
     procesandoId,
     setProcesandoId,
-  ] = useState<string | null>(
-    null
-  );
+  ] =
+    useState<string | null>(
+      null
+    );
 
-  const [mensaje, setMensaje] =
+  const [
+    mensaje,
+    setMensaje,
+  ] =
     useState("");
 
-  const [error, setError] =
+  const [
+    error,
+    setError,
+  ] =
     useState("");
 
   /*
@@ -76,7 +91,8 @@ export function useCocina() {
         }
 
         setPedidos(
-          resultado.data ?? []
+          resultado.data ??
+            []
         );
       } catch (
         errorDesconocido
@@ -97,11 +113,9 @@ export function useCocina() {
    * ACTUALIZACIÓN AUTOMÁTICA
    * =====================================================
    *
-   * Cada 5 segundos revisamos si el mozo
-   * confirmó nuevos pedidos.
-   *
-   * Así cocina no necesita estar
-   * presionando Actualizar.
+   * Cada 5 segundos Cocina consulta si
+   * existen nuevos pedidos confirmados
+   * desde el Centro de Pedidos.
    */
   useEffect(() => {
     cargarPedidos();
@@ -126,13 +140,17 @@ export function useCocina() {
    * CAMBIAR ESTADO
    * =====================================================
    *
-   * Flujo simplificado:
+   * Responsabilidad de Cocina:
    *
    * RECIBIDO
    *    ↓
    * PREPARANDO
    *    ↓
-   * ENTREGADO
+   * LISTO
+   *
+   * Cuando pasa a LISTO,
+   * el pedido deja Cocina
+   * y pasa al módulo Entregas.
    */
   async function cambiarEstado(
     pedidoId: string,
@@ -169,7 +187,8 @@ export function useCocina() {
 
       if (
         !respuesta.ok ||
-        !resultado.success
+        !resultado.success ||
+        !resultado.data
       ) {
         throw new Error(
           resultado.message ||
@@ -178,14 +197,22 @@ export function useCocina() {
       }
 
       setMensaje(
-        resultado.message
+        resultado.message ||
+          (estado ===
+          "PREPARANDO"
+            ? "Pedido enviado a preparación."
+            : "Pedido marcado como listo para entregar.")
       );
 
       /*
-       * Actualizamos inmediatamente.
+       * Recargamos inmediatamente.
        *
-       * Si pasó a ENTREGADO,
-       * desaparecerá de Cocina.
+       * PREPARANDO:
+       * seguirá apareciendo en Cocina.
+       *
+       * LISTO:
+       * debería desaparecer de Cocina
+       * y aparecer en Entregas.
        */
       await cargarPedidos();
 
@@ -208,6 +235,11 @@ export function useCocina() {
     }
   }
 
+  /*
+   * =====================================================
+   * LIMPIAR MENSAJES
+   * =====================================================
+   */
   function limpiarMensajes() {
     setMensaje("");
     setError("");

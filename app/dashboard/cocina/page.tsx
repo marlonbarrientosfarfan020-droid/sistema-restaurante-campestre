@@ -77,7 +77,7 @@ function obtenerSiguienteAccion(
     return {
       estado:
         "PREPARANDO" as const,
-      texto: "Preparar pedido",
+      texto: "Iniciar preparación",
       icono: (
         <Flame size={19} />
       ),
@@ -89,8 +89,8 @@ function obtenerSiguienteAccion(
   if (estado === "PREPARANDO") {
     return {
       estado:
-        "ENTREGADO" as const,
-      texto: "Pedido entregado",
+        "LISTO" as const,
+      texto: "Marcar como listo",
       icono: (
         <PackageCheck
           size={19}
@@ -439,7 +439,7 @@ function PedidoCocinaCard({
     pedidoId: string,
     estado:
       | "PREPARANDO"
-      | "ENTREGADO"
+      | "LISTO"
   ) => Promise<boolean>;
 }) {
   const minutos =
@@ -714,9 +714,9 @@ export default function CocinaPage() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-slate-300">
-                Flujo rápido:
+                Flujo de cocina:
                 recibir, preparar y
-                entregar.
+                marcar como listo.
               </p>
             </div>
 
@@ -871,10 +871,9 @@ export default function CocinaPage() {
             </h2>
 
             <p className="mt-2 text-slate-500">
-              Los pedidos QR
-              aparecerán aquí
-              después de que el
-              mozo los confirme.
+              Los pedidos aparecerán aquí
+              después de ser confirmados en
+              el Centro de Pedidos.
             </p>
           </div>
         ) : (

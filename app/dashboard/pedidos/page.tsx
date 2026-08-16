@@ -718,12 +718,10 @@ export default function PedidosPage() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm text-slate-300 md:text-base">
-                Supervisa en tiempo
-                real todos los
-                pedidos del
-                restaurante, desde
-                su recepción hasta
-                la entrega.
+                Confirma pedidos nuevos y
+                supervisa en tiempo real el
+                avance entre Cocina, Entregas
+                y la mesa.
               </p>
 
             </div>
@@ -1188,9 +1186,6 @@ export default function PedidosPage() {
                     "PENDIENTE_CONFIRMACION",
                     "NUEVO",
                     "RECIBIDO",
-                    "PREPARANDO",
-                    "LISTO",
-                    "EN_ENTREGA",
                   ].includes(
                     pedido.estado
                   );
@@ -1542,64 +1537,56 @@ export default function PedidosPage() {
 
                           )}
 
-                          {/* PREPARAR */}
+                          {/* SEGUIMIENTO OPERATIVO */}
 
                           {pedido.estado ===
                             "RECIBIDO" && (
-
-                            <BotonEstado
-                              procesando={
-                                procesando
-                              }
-                              texto="Iniciar preparación"
-                              icono={
-                                <ChefHat
-                                  size={
-                                    18
-                                  }
-                                />
-                              }
-                              clases="bg-amber-500 text-white hover:bg-amber-600"
-                              onClick={() =>
-                                cambiarEstado(
-                                  pedido.id,
-                                  "PREPARANDO"
-                                )
-                              }
-                            />
-
+                            <div className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 font-black text-sky-700">
+                              <ChefHat
+                                size={18}
+                              />
+                              Enviado a cocina
+                            </div>
                           )}
 
-                          {/* ENTREGAR */}
+                          {pedido.estado ===
+                            "PREPARANDO" && (
+                            <div className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 font-black text-amber-700">
+                              <ChefHat
+                                size={18}
+                              />
+                              Cocina preparando
+                            </div>
+                          )}
 
-                          {(pedido.estado ===
-                            "PREPARANDO" ||
-                            pedido.estado ===
-                              "LISTO" ||
-                            pedido.estado ===
-                              "EN_ENTREGA") && (
+                          {pedido.estado ===
+                            "LISTO" && (
+                            <div className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 font-black text-emerald-700">
+                              <PackageCheck
+                                size={18}
+                              />
+                              Listo para recoger
+                            </div>
+                          )}
 
-                            <BotonEstado
-                              procesando={
-                                procesando
-                              }
-                              texto="Marcar entregado"
-                              icono={
-                                <PackageCheck
-                                  size={
-                                    18
-                                  }
-                                />
-                              }
-                              clases="bg-emerald-600 text-white hover:bg-emerald-700"
-                              onClick={() =>
-                                cambiarEstado(
-                                  pedido.id,
-                                  "ENTREGADO"
-                                )
-                              }
-                            />
+                          {pedido.estado ===
+                            "EN_ENTREGA" && (
+                            <div className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 font-black text-violet-700">
+                              <UtensilsCrossed
+                                size={18}
+                              />
+                              Mozo en camino
+                            </div>
+                          )}
 
+                          {pedido.estado ===
+                            "ENTREGADO" && (
+                            <div className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 font-black text-emerald-700">
+                              <CheckCircle2
+                                size={18}
+                              />
+                              Entregado en mesa
+                            </div>
                           )}
 
                           {/* ANULAR */}

@@ -186,12 +186,12 @@ function PedidoEntregaCard({
           ) : enEntrega ? (
             <>
               <CheckCircle2 size={20} />
-              Confirmar entrega
+              Entregado en mesa
             </>
           ) : (
             <>
               <Route size={20} />
-              Recoger pedido
+              Recoger de cocina
             </>
           )}
         </button>
@@ -240,8 +240,8 @@ export default function EntregasPage() {
               </h1>
 
               <p className="mt-3 text-slate-300">
-                Recoge los pedidos listos y
-                confirma la entrega en cada mesa.
+                Recoge en Cocina los pedidos listos
+                y confirma cuando lleguen a la mesa.
               </p>
             </div>
 
