@@ -17,7 +17,10 @@ function manejarError(error: unknown) {
     );
   }
 
-  console.error("Error en mesas:", error);
+  console.error(
+    "Error en mesas:",
+    error
+  );
 
   const detalle =
     error instanceof Error
@@ -40,15 +43,18 @@ export async function GET(
   request: NextRequest
 ) {
   try {
-    const { searchParams } = new URL(
-      request.url
-    );
+    const { searchParams } =
+      new URL(request.url);
 
     const sucursalId =
-      searchParams.get("sucursalId") ?? "";
+      searchParams
+        .get("sucursalId")
+        ?.trim() ?? "";
 
     const mesas =
-      await mesaService.listar(sucursalId);
+      await mesaService.listar(
+        sucursalId
+      );
 
     return NextResponse.json(
       ok(
@@ -65,19 +71,44 @@ export async function POST(
   request: NextRequest
 ) {
   try {
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const atencion =
       await mesaService.abrirAtencion({
-        mesaId: body.mesaId,
-        sucursalId: body.sucursalId,
-        mozoId: body.mozoId,
-        cantidadPersonas: Number(
-          body.cantidadPersonas ?? 1
-        ),
+        mesaId:
+          typeof body.mesaId ===
+          "string"
+            ? body.mesaId.trim()
+            : "",
+
+        sucursalId:
+          typeof body.sucursalId ===
+          "string"
+            ? body.sucursalId.trim()
+            : "",
+
+        mozoId:
+          typeof body.mozoId ===
+          "string" &&
+          body.mozoId.trim()
+            ? body.mozoId.trim()
+            : undefined,
+
+        cantidadPersonas:
+          Number(
+            body.cantidadPersonas ??
+              1
+          ),
+
         metodoPagoPrevisto:
           body.metodoPagoPrevisto,
-        observacion: body.observacion,
+
+        observacion:
+          typeof body.observacion ===
+          "string"
+            ? body.observacion.trim()
+            : undefined,
       });
 
     return NextResponse.json(

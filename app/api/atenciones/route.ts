@@ -10,10 +10,19 @@ import {
 } from "@/app/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { fail, ok } from "@/lib/response";
+import {
+  fail,
+  ok,
+} from "@/lib/response";
 
+/*
+ * ============================================================
+ * CÓDIGO ÚNICO DE ATENCIÓN
+ * ============================================================
+ */
 function generarCodigoAtencion() {
-  const ahora = new Date();
+  const ahora =
+    new Date();
 
   const fecha = [
     ahora.getFullYear(),
@@ -41,24 +50,104 @@ function generarCodigoAtencion() {
   ].join("");
 
   const aleatorio =
-    Math.random()
-      .toString(36)
-      .slice(2, 6)
+    crypto
+      .randomUUID()
+      .replaceAll("-", "")
+      .slice(0, 6)
       .toUpperCase();
 
   return `AT-${fecha}-${hora}-${aleatorio}`;
 }
 
+/*
+ * ============================================================
+ * CÓDIGO DE ACCESO PARA LOS CLIENTES
+ * ============================================================
+ *
+ * Ejemplo:
+ * 4827
+ *
+ * Se comparte únicamente entre
+ * las personas de la misma mesa.
+ */
+function generarCodigoAcceso() {
+  const arreglo =
+    new Uint32Array(1);
+
+  crypto.getRandomValues(
+    arreglo
+  );
+
+  const numero =
+    1000 +
+    (arreglo[0] % 9000);
+
+  return String(numero);
+}
+
+/*
+ * ============================================================
+ * TOKEN SEGURO DE LA ATENCIÓN
+ * ============================================================
+ */
+function generarTokenAcceso() {
+  return [
+    crypto.randomUUID(),
+    crypto.randomUUID(),
+  ]
+    .join("")
+    .replaceAll("-", "");
+}
+
+/*
+ * ============================================================
+ * ESTADOS QUE TODAVÍA OCUPAN LA MESA
+ * ============================================================
+ */
+const ESTADOS_ACTIVOS: EstadoAtencion[] = [
+  EstadoAtencion.ABIERTA,
+  EstadoAtencion.SOLICITO_CUENTA,
+  EstadoAtencion.PAGADA,
+];
+
+/*
+ * ============================================================
+ * GET
+ * ============================================================
+ *
+ * Sirve para consultar el estado de una mesa.
+ *
+ * IMPORTANTE:
+ *
+ * Ya NO entregamos automáticamente la atención
+ * de una mesa ocupada a cualquier celular.
+ *
+ * Si existe token válido:
+ * → devolvemos la atención.
+ *
+ * Si no existe token válido:
+ * → solo informamos que la mesa está ocupada.
+ */
 export async function GET(
   request: NextRequest
 ) {
   try {
-    const { searchParams } =
-      new URL(request.url);
+    const {
+      searchParams,
+    } =
+      new URL(
+        request.url
+      );
 
     const mesaId =
-      searchParams.get("mesaId")?.trim() ??
-      "";
+      searchParams
+        .get("mesaId")
+        ?.trim() ?? "";
+
+    const token =
+      searchParams
+        .get("token")
+        ?.trim() ?? "";
 
     if (!mesaId) {
       return NextResponse.json(
@@ -75,7 +164,11 @@ export async function GET(
       await prisma.atencion.findFirst({
         where: {
           mesaId,
-          estado: EstadoAtencion.ABIERTA,
+
+          estado: {
+            in:
+              ESTADOS_ACTIVOS,
+          },
         },
 
         include: {
@@ -105,27 +198,144 @@ export async function GET(
           pedidos: {
             where: {
               estado: {
-                not: "ANULADO",
+                not:
+                  "ANULADO",
               },
             },
 
             orderBy: {
-              fechaPedido: "asc",
+              fechaPedido:
+                "asc",
             },
           },
         },
 
         orderBy: {
-          fechaApertura: "desc",
+          fechaApertura:
+            "desc",
         },
       });
 
+    /*
+     * Mesa sin atención.
+     */
+    if (!atencion) {
+      return NextResponse.json(
+        ok(
+          {
+            ocupada:
+              false,
+
+            autorizado:
+              false,
+
+            requiereCodigo:
+              false,
+
+            atencion:
+              null,
+          },
+          "La mesa se encuentra disponible."
+        )
+      );
+    }
+
+    /*
+     * Existe atención.
+     *
+     * Validamos el token que posee
+     * este navegador.
+     */
+    const autorizado =
+      Boolean(
+        token &&
+          atencion.tokenAccesoMesa &&
+          token ===
+            atencion.tokenAccesoMesa
+      );
+
+    /*
+     * Navegador autorizado.
+     */
+    if (autorizado) {
+      const {
+        tokenAccesoMesa:
+          _tokenPrivado,
+
+        codigoAccesoMesa:
+          _codigoPrivado,
+
+        ...atencionSegura
+      } =
+        atencion;
+
+      return NextResponse.json(
+        ok(
+          {
+            ocupada:
+              true,
+
+            autorizado:
+              true,
+
+            requiereCodigo:
+              false,
+
+            atencion:
+              atencionSegura,
+          },
+          "Atención activa obtenida correctamente."
+        )
+      );
+    }
+
+    /*
+     * Otro celular escaneó el QR.
+     *
+     * NO devolvemos:
+     * - pedidos
+     * - total
+     * - atención
+     * - código
+     * - token
+     */
     return NextResponse.json(
       ok(
-        atencion,
-        atencion
-          ? "Atención activa obtenida correctamente."
-          : "La mesa no tiene una atención activa."
+        {
+          ocupada:
+            true,
+
+          autorizado:
+            false,
+
+          requiereCodigo:
+            atencion.estado ===
+            EstadoAtencion.ABIERTA,
+
+          atencion:
+            null,
+
+          mesa: {
+            id:
+              atencion.mesa.id,
+
+            numero:
+              atencion.mesa.numero,
+
+            nombre:
+              atencion.mesa.nombre,
+
+            estado:
+              atencion.mesa.estado,
+
+            zona:
+              atencion.mesa.zona,
+          },
+
+          estadoAtencion:
+            atencion.estado,
+        },
+        "Esta mesa ya tiene una atención activa."
       )
     );
   } catch (error) {
@@ -136,9 +346,11 @@ export async function GET(
 
     return NextResponse.json(
       fail(
-        process.env.NODE_ENV === "development"
+        process.env.NODE_ENV ===
+          "development"
           ? `Error obteniendo atención: ${
-              error instanceof Error
+              error instanceof
+              Error
                 ? error.message
                 : "Error desconocido"
             }`
@@ -151,6 +363,20 @@ export async function GET(
   }
 }
 
+/*
+ * ============================================================
+ * POST
+ * ============================================================
+ *
+ * accion:
+ *
+ * ABRIR
+ * → primera persona ocupa la mesa.
+ *
+ * UNIR
+ * → otro teléfono entra usando
+ *   el código de 4 dígitos.
+ */
 export async function POST(
   request: NextRequest
 ) {
@@ -158,34 +384,191 @@ export async function POST(
     const body =
       await request.json();
 
+    const accion =
+      typeof body.accion ===
+      "string"
+        ? body.accion
+            .trim()
+            .toUpperCase()
+        : "ABRIR";
+
     const mesaId =
-      typeof body.mesaId === "string"
+      typeof body.mesaId ===
+      "string"
         ? body.mesaId.trim()
         : "";
 
     const sucursalId =
-      typeof body.sucursalId === "string"
+      typeof body.sucursalId ===
+      "string"
         ? body.sucursalId.trim()
         : "";
-
-    const cantidadPersonas =
-      Number(body.cantidadPersonas ?? 1);
-
-    const metodoPagoPrevisto =
-      typeof body.metodoPagoPrevisto ===
-      "string"
-        ? body.metodoPagoPrevisto.trim()
-        : "";
-
-    const observacion =
-      typeof body.observacion === "string"
-        ? body.observacion.trim()
-        : undefined;
 
     if (!mesaId) {
       return NextResponse.json(
         fail(
           "La mesa es obligatoria."
+        ),
+        {
+          status: 400,
+        }
+      );
+    }
+
+    /*
+     * ========================================================
+     * UNIRSE A UNA MESA OCUPADA
+     * ========================================================
+     */
+    if (
+      accion === "UNIR"
+    ) {
+      const codigoAcceso =
+        typeof body.codigoAcceso ===
+        "string"
+          ? body.codigoAcceso
+              .trim()
+          : "";
+
+      if (
+        !/^\d{4}$/.test(
+          codigoAcceso
+        )
+      ) {
+        return NextResponse.json(
+          fail(
+            "Ingresa el código de acceso de 4 dígitos."
+          ),
+          {
+            status: 400,
+          }
+        );
+      }
+
+      const atencion =
+        await prisma.atencion.findFirst({
+          where: {
+            mesaId,
+
+            estado:
+              EstadoAtencion.ABIERTA,
+          },
+
+          include: {
+            mesa: {
+              select: {
+                id: true,
+                numero: true,
+                nombre: true,
+                estado: true,
+
+                zona: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                  },
+                },
+              },
+            },
+          },
+
+          orderBy: {
+            fechaApertura:
+              "desc",
+          },
+        });
+
+      if (!atencion) {
+        return NextResponse.json(
+          fail(
+            "Esta mesa ya no tiene una atención abierta."
+          ),
+          {
+            status: 409,
+          }
+        );
+      }
+
+      if (
+        !atencion.codigoAccesoMesa ||
+        atencion.codigoAccesoMesa !==
+          codigoAcceso
+      ) {
+        return NextResponse.json(
+          fail(
+            "El código de acceso es incorrecto."
+          ),
+          {
+            status: 403,
+          }
+        );
+      }
+
+      /*
+       * Compatibilidad con atenciones creadas
+       * antes de esta mejora.
+       */
+      let tokenAcceso =
+        atencion.tokenAccesoMesa;
+
+      if (!tokenAcceso) {
+        tokenAcceso =
+          generarTokenAcceso();
+
+        await prisma.atencion.update({
+          where: {
+            id:
+              atencion.id,
+          },
+
+          data: {
+            tokenAccesoMesa:
+              tokenAcceso,
+          },
+        });
+      }
+
+      const {
+        tokenAccesoMesa:
+          _tokenPrivado,
+
+        codigoAccesoMesa:
+          _codigoPrivado,
+
+        ...atencionSegura
+      } =
+        atencion;
+
+      return NextResponse.json(
+        ok(
+          {
+            creada:
+              false,
+
+            unida:
+              true,
+
+            tokenAcceso,
+
+            atencion:
+              atencionSegura,
+          },
+          `Acceso autorizado a ${atencion.mesa.nombre}.`
+        )
+      );
+    }
+
+    /*
+     * ========================================================
+     * ABRIR NUEVA ATENCIÓN
+     * ========================================================
+     */
+    if (
+      accion !== "ABRIR"
+    ) {
+      return NextResponse.json(
+        fail(
+          "La acción solicitada no es válida."
         ),
         {
           status: 400,
@@ -204,12 +587,34 @@ export async function POST(
       );
     }
 
+    const cantidadPersonas =
+      Number(
+        body.cantidadPersonas ??
+          1
+      );
+
+    const metodoPagoPrevisto =
+      typeof body.metodoPagoPrevisto ===
+      "string"
+        ? body.metodoPagoPrevisto
+            .trim()
+        : "";
+
+    const observacion =
+      typeof body.observacion ===
+      "string"
+        ? body.observacion
+            .trim()
+        : undefined;
+
     if (
       !Number.isFinite(
         cantidadPersonas
       ) ||
-      cantidadPersonas <= 0 ||
-      cantidadPersonas > 50
+      cantidadPersonas <=
+        0 ||
+      cantidadPersonas >
+        50
     ) {
       return NextResponse.json(
         fail(
@@ -222,16 +627,24 @@ export async function POST(
     }
 
     const metodoValido =
-      metodoPagoPrevisto &&
-      [
-        "EFECTIVO",
-        "YAPE",
-        "PLIN",
-        "TARJETA",
-        "MIXTO",
-      ].includes(
-        metodoPagoPrevisto
+      Boolean(
+        metodoPagoPrevisto &&
+          [
+            "EFECTIVO",
+            "YAPE",
+            "PLIN",
+            "TARJETA",
+            "MIXTO",
+          ].includes(
+            metodoPagoPrevisto
+          )
       );
+
+    const codigoAcceso =
+      generarCodigoAcceso();
+
+    const tokenAcceso =
+      generarTokenAcceso();
 
     const resultado =
       await prisma.$transaction(
@@ -239,8 +652,11 @@ export async function POST(
           const mesa =
             await tx.mesa.findFirst({
               where: {
-                id: mesaId,
-                activa: true,
+                id:
+                  mesaId,
+
+                activa:
+                  true,
 
                 zona: {
                   sucursalId,
@@ -251,6 +667,7 @@ export async function POST(
                 id: true,
                 numero: true,
                 nombre: true,
+                capacidad: true,
                 estado: true,
               },
             });
@@ -262,67 +679,24 @@ export async function POST(
           }
 
           /*
-           * Muy importante para QR:
+           * ==================================================
+           * BLOQUEO REAL
+           * ==================================================
            *
-           * Si la mesa ya tiene una atención
-           * ABIERTA, reutilizamos esa misma.
+           * Ya NO reutilizamos una atención
+           * automáticamente.
            *
-           * Esto permite que el cliente haga:
-           *
-           * pedido inicial
-           * + bebida 20 min después
-           * + postre después
-           *
-           * y todo quede en una sola cuenta.
+           * Si hay una abierta:
+           * otro celular debe usar UNIR.
            */
           const atencionExistente =
             await tx.atencion.findFirst({
               where: {
                 mesaId,
-                sucursalId,
-                estado:
-                  EstadoAtencion.ABIERTA,
-              },
 
-              include: {
-                mesa: {
-                  select: {
-                    id: true,
-                    numero: true,
-                    nombre: true,
-                    estado: true,
-                  },
-                },
-              },
-
-              orderBy: {
-                fechaApertura: "desc",
-              },
-            });
-
-          if (atencionExistente) {
-            return {
-              creada: false,
-              atencion:
-                atencionExistente,
-            };
-          }
-
-          /*
-           * Si existe una atención que ya
-           * solicitó cuenta o fue pagada,
-           * no dejamos abrir otra hasta que
-           * la anterior se cierre/libere.
-           */
-          const atencionPendiente =
-            await tx.atencion.findFirst({
-              where: {
-                mesaId,
                 estado: {
-                  in: [
-                    EstadoAtencion.SOLICITO_CUENTA,
-                    EstadoAtencion.PAGADA,
-                  ],
+                  in:
+                    ESTADOS_ACTIVOS,
                 },
               },
 
@@ -333,29 +707,23 @@ export async function POST(
               },
             });
 
-          if (atencionPendiente) {
+          if (
+            atencionExistente
+          ) {
             throw new Error(
-              "MESA_CON_CUENTA_PENDIENTE"
+              "MESA_OCUPADA"
             );
           }
 
-          /*
-           * IMPORTANTE:
-           *
-           * Antes se buscaba el último código AT-xxxxxx
-           * y se intentaba convertir a número.
-           *
-           * En la base ya existen códigos históricos
-           * con formato AT-20260815-..., por lo que
-           * Number(...) devolvía NaN y terminaba
-           * intentando crear nuevamente AT-000001.
-           *
-           * Eso provocaba Prisma P2002:
-           * unique(sucursalId, codigo).
-           *
-           * Ahora generamos un código único por
-           * fecha + hora + milisegundos + sufijo.
-           */
+          const cantidadFinal =
+            Math.max(
+              1,
+              Math.min(
+                mesa.capacidad,
+                cantidadPersonas
+              )
+            );
+
           const codigo =
             generarCodigoAtencion();
 
@@ -370,7 +738,14 @@ export async function POST(
                 estado:
                   EstadoAtencion.ABIERTA,
 
-                cantidadPersonas,
+                cantidadPersonas:
+                  cantidadFinal,
+
+                codigoAccesoMesa:
+                  codigoAcceso,
+
+                tokenAccesoMesa:
+                  tokenAcceso,
 
                 metodoPagoPrevisto:
                   metodoValido
@@ -393,18 +768,22 @@ export async function POST(
                     numero: true,
                     nombre: true,
                     estado: true,
+
+                    zona: {
+                      select: {
+                        id: true,
+                        nombre: true,
+                      },
+                    },
                   },
                 },
               },
             });
 
-          /*
-           * Abrir atención significa que la
-           * mesa deja de estar LIBRE.
-           */
           await tx.mesa.update({
             where: {
-              id: mesaId,
+              id:
+                mesaId,
             },
 
             data: {
@@ -413,9 +792,30 @@ export async function POST(
             },
           });
 
+          const {
+            tokenAccesoMesa:
+              _tokenPrivado,
+
+            codigoAccesoMesa:
+              _codigoPrivado,
+
+            ...atencionSegura
+          } =
+            atencion;
+
           return {
-            creada: true,
-            atencion,
+            creada:
+              true,
+
+            unida:
+              false,
+
+            codigoAcceso,
+
+            tokenAcceso,
+
+            atencion:
+              atencionSegura,
           };
         }
       );
@@ -423,15 +823,10 @@ export async function POST(
     return NextResponse.json(
       ok(
         resultado,
-        resultado.creada
-          ? "Atención creada correctamente."
-          : "Se reutilizó la atención activa de la mesa."
+        "Mesa ocupada y atención iniciada correctamente."
       ),
       {
-        status:
-          resultado.creada
-            ? 201
-            : 200,
+        status: 201,
       }
     );
   } catch (error) {
@@ -453,11 +848,11 @@ export async function POST(
     if (
       error instanceof Error &&
       error.message ===
-        "MESA_CON_CUENTA_PENDIENTE"
+        "MESA_OCUPADA"
     ) {
       return NextResponse.json(
         fail(
-          "Esta mesa ya tiene una cuenta solicitada o pagada pendiente de cierre."
+          "Esta mesa ya está ocupada. Si perteneces a esta mesa, ingresa el código de acceso."
         ),
         {
           status: 409,
@@ -466,7 +861,7 @@ export async function POST(
     }
 
     console.error(
-      "Error creando atención:",
+      "Error procesando atención:",
       error
     );
 
@@ -474,12 +869,13 @@ export async function POST(
       fail(
         process.env.NODE_ENV ===
           "development"
-          ? `Error creando atención: ${
-              error instanceof Error
+          ? `Error procesando atención: ${
+              error instanceof
+              Error
                 ? error.message
                 : "Error desconocido"
             }`
-          : "No se pudo crear la atención."
+          : "No se pudo procesar la atención."
       ),
       {
         status: 500,

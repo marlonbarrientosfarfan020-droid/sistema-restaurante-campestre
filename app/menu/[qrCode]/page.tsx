@@ -21,6 +21,7 @@ import {
   Search,
   ShoppingBag,
   ShoppingCart,
+  Users,
   UtensilsCrossed,
   X,
 } from "lucide-react";
@@ -354,6 +355,36 @@ export default function MenuQRPage() {
       null
     );
 
+  const [
+    tokenAcceso,
+    setTokenAcceso,
+  ] =
+    useState("");
+
+  const [
+    codigoAcceso,
+    setCodigoAcceso,
+  ] =
+    useState("");
+
+  const [
+    codigoGenerado,
+    setCodigoGenerado,
+  ] =
+    useState("");
+
+  const [
+    mesaOcupadaSinAcceso,
+    setMesaOcupadaSinAcceso,
+  ] =
+    useState(false);
+
+  const [
+    uniendoseMesa,
+    setUniendoseMesa,
+  ] =
+    useState(false);
+
   const claveAtencionLocal =
     useMemo(
       () =>
@@ -368,6 +399,15 @@ export default function MenuQRPage() {
       () =>
         qrCode
           ? `chinka_cuenta_${qrCode}`
+          : "",
+      [qrCode]
+    );
+
+  const claveTokenLocal =
+    useMemo(
+      () =>
+        qrCode
+          ? `chinka_token_${qrCode}`
           : "",
       [qrCode]
     );
@@ -481,11 +521,28 @@ export default function MenuQRPage() {
         try {
           setCargandoEstado(true);
 
+          const tokenGuardado =
+            claveTokenLocal
+              ? window.localStorage.getItem(
+                  claveTokenLocal
+                ) ?? ""
+              : "";
+
+          const parametros =
+            new URLSearchParams({
+              mesaId,
+            });
+
+          if (tokenGuardado) {
+            parametros.set(
+              "token",
+              tokenGuardado
+            );
+          }
+
           const respuesta =
             await fetch(
-              `/api/atenciones?mesaId=${encodeURIComponent(
-                mesaId
-              )}`,
+              `/api/atenciones?${parametros.toString()}`,
               {
                 method: "GET",
                 cache: "no-store",
@@ -493,13 +550,29 @@ export default function MenuQRPage() {
             );
 
           const resultado =
-            (await respuesta.json()) as ApiResponse<
-              AtencionActiva | null
-            >;
+            (await respuesta.json()) as ApiResponse<{
+              ocupada: boolean;
+              autorizado: boolean;
+              requiereCodigo: boolean;
+
+              atencion:
+                | AtencionActiva
+                | null;
+
+              mesa?: {
+                id: string;
+                numero: number;
+                nombre: string;
+                estado: string;
+              };
+
+              estadoAtencion?: string;
+            }>;
 
           if (
             !respuesta.ok ||
-            !resultado.success
+            !resultado.success ||
+            !resultado.data
           ) {
             throw new Error(
               resultado.message ||
@@ -507,19 +580,68 @@ export default function MenuQRPage() {
             );
           }
 
-          const actual =
-            resultado.data ?? null;
+          const datos =
+            resultado.data;
 
-          if (actual) {
+          /*
+           * ==========================================
+           * MESA LIBRE
+           * ==========================================
+           */
+          if (!datos.ocupada) {
+            setAtencion(null);
+            setPedidos([]);
+            setMesaOcupadaSinAcceso(
+              false
+            );
+            setTokenAcceso("");
+            setCodigoGenerado("");
+
+            if (
+              claveAtencionLocal
+            ) {
+              window.localStorage.removeItem(
+                claveAtencionLocal
+              );
+            }
+
+            if (claveTokenLocal) {
+              window.localStorage.removeItem(
+                claveTokenLocal
+              );
+            }
+
+            return;
+          }
+
+          /*
+           * ==========================================
+           * CELULAR AUTORIZADO
+           * ==========================================
+           */
+          if (
+            datos.autorizado &&
+            datos.atencion
+          ) {
+            setMesaOcupadaSinAcceso(
+              false
+            );
+
             setAtencion(
-              actual
+              datos.atencion
+            );
+
+            setTokenAcceso(
+              tokenGuardado
             );
 
             if (
-              actual.metodoPagoPrevisto
+              datos.atencion
+                .metodoPagoPrevisto
             ) {
               setMetodoPagoSeleccionado(
-                actual.metodoPagoPrevisto
+                datos.atencion
+                  .metodoPagoPrevisto
               );
             }
 
@@ -528,40 +650,28 @@ export default function MenuQRPage() {
             ) {
               window.localStorage.setItem(
                 claveAtencionLocal,
-                actual.id
+                datos.atencion.id
               );
             }
 
             await cargarPedidos(
-              actual.id
+              datos.atencion.id
             );
 
             return;
           }
 
           /*
-           * GET /api/atenciones solamente
-           * devuelve una atención ABIERTA.
-           *
-           * Si ya se solicitó la cuenta,
-           * conservamos temporalmente el
-           * identificador del navegador para
-           * poder seguir mostrando pedidos.
+           * ==========================================
+           * MESA OCUPADA SIN ACCESO
+           * ==========================================
            */
-          const atencionGuardada =
-            claveAtencionLocal
-              ? window.localStorage.getItem(
-                  claveAtencionLocal
-                )
-              : null;
-
-          if (
-            atencionGuardada
-          ) {
-            await cargarPedidos(
-              atencionGuardada
-            );
-          }
+          setAtencion(null);
+          setPedidos([]);
+          setMesaOcupadaSinAcceso(
+            true
+          );
+          setTokenAcceso("");
         } catch (
           errorDesconocido
         ) {
@@ -578,6 +688,7 @@ export default function MenuQRPage() {
       [
         cargarPedidos,
         claveAtencionLocal,
+        claveTokenLocal,
       ]
     );
 
@@ -867,35 +978,34 @@ export default function MenuQRPage() {
       return;
     }
 
-    if (
-      !metodoPagoSeleccionado
-    ) {
-      setErrorPedido(
-        "Selecciona cómo pagarás al finalizar."
-      );
-      return;
-    }
-
     try {
       setOcupandoMesa(true);
       setMensajePedido("");
       setErrorPedido("");
+      setCodigoGenerado("");
 
       const respuesta =
         await fetch(
           "/api/atenciones",
           {
             method: "POST",
+
             headers: {
               "Content-Type":
                 "application/json",
             },
+
             body: JSON.stringify({
+              accion:
+                "ABRIR",
+
               mesaId:
                 menu.mesa.id,
+
               sucursalId:
                 menu.restaurante
                   .sucursal.id,
+
               cantidadPersonas:
                 Math.max(
                   1,
@@ -906,8 +1016,10 @@ export default function MenuQRPage() {
                     ) || 1
                   )
                 ),
+
               metodoPagoPrevisto:
-                metodoPagoSeleccionado,
+                metodoPagoSeleccionado ??
+                undefined,
             }),
           }
         );
@@ -915,6 +1027,9 @@ export default function MenuQRPage() {
       const resultado =
         (await respuesta.json()) as ApiResponse<{
           creada: boolean;
+          unida: boolean;
+          codigoAcceso: string;
+          tokenAcceso: string;
           atencion: AtencionActiva;
         }>;
 
@@ -929,8 +1044,23 @@ export default function MenuQRPage() {
         );
       }
 
+      const datos =
+        resultado.data;
+
       setAtencion(
-        resultado.data.atencion
+        datos.atencion
+      );
+
+      setTokenAcceso(
+        datos.tokenAcceso
+      );
+
+      setCodigoGenerado(
+        datos.codigoAcceso
+      );
+
+      setMesaOcupadaSinAcceso(
+        false
       );
 
       if (
@@ -938,7 +1068,14 @@ export default function MenuQRPage() {
       ) {
         window.localStorage.setItem(
           claveAtencionLocal,
-          resultado.data.atencion.id
+          datos.atencion.id
+        );
+      }
+
+      if (claveTokenLocal) {
+        window.localStorage.setItem(
+          claveTokenLocal,
+          datos.tokenAcceso
         );
       }
 
@@ -974,6 +1111,131 @@ export default function MenuQRPage() {
       );
     } finally {
       setOcupandoMesa(false);
+    }
+  }
+
+  async function unirseAMesa() {
+    if (!menu) {
+      return;
+    }
+
+    const codigo =
+      codigoAcceso.trim();
+
+    if (
+      !/^\d{4}$/.test(
+        codigo
+      )
+    ) {
+      setErrorPedido(
+        "Ingresa el código de 4 dígitos de tu mesa."
+      );
+      return;
+    }
+
+    try {
+      setUniendoseMesa(true);
+      setErrorPedido("");
+      setMensajePedido("");
+
+      const respuesta =
+        await fetch(
+          "/api/atenciones",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              accion:
+                "UNIR",
+
+              mesaId:
+                menu.mesa.id,
+
+              codigoAcceso:
+                codigo,
+            }),
+          }
+        );
+
+      const resultado =
+        (await respuesta.json()) as ApiResponse<{
+          creada: boolean;
+          unida: boolean;
+          tokenAcceso: string;
+          atencion: AtencionActiva;
+        }>;
+
+      if (
+        !respuesta.ok ||
+        !resultado.success ||
+        !resultado.data
+      ) {
+        throw new Error(
+          resultado.message ||
+            "No se pudo ingresar a la mesa."
+        );
+      }
+
+      const datos =
+        resultado.data;
+
+      setTokenAcceso(
+        datos.tokenAcceso
+      );
+
+      setAtencion(
+        datos.atencion
+      );
+
+      setMesaOcupadaSinAcceso(
+        false
+      );
+
+      setCodigoAcceso("");
+
+      if (
+        claveTokenLocal
+      ) {
+        window.localStorage.setItem(
+          claveTokenLocal,
+          datos.tokenAcceso
+        );
+      }
+
+      if (
+        claveAtencionLocal
+      ) {
+        window.localStorage.setItem(
+          claveAtencionLocal,
+          datos.atencion.id
+        );
+      }
+
+      setMensajePedido(
+        `Bienvenido a ${menu.mesa.nombre}. Ya puedes realizar pedidos.`
+      );
+
+      await cargarMenu();
+
+      await cargarEstadoAtencion(
+        menu.mesa.id
+      );
+    } catch (
+      errorDesconocido
+    ) {
+      setErrorPedido(
+        errorDesconocido instanceof
+          Error
+          ? errorDesconocido.message
+          : "No se pudo ingresar a esta mesa."
+      );
+    } finally {
+      setUniendoseMesa(false);
     }
   }
 
@@ -1048,6 +1310,21 @@ export default function MenuQRPage() {
         );
       }
 
+      if (
+        claveTokenLocal
+      ) {
+        window.localStorage.removeItem(
+          claveTokenLocal
+        );
+      }
+
+      setTokenAcceso("");
+      setCodigoAcceso("");
+      setCodigoGenerado("");
+      setMesaOcupadaSinAcceso(
+        false
+      );
+
       setAtencion(null);
       setPedidos([]);
       setCarrito([]);
@@ -1086,7 +1363,7 @@ export default function MenuQRPage() {
 
     if (!atencion) {
       setErrorPedido(
-        "Primero debes ocupar la mesa antes de enviar un pedido."
+        "Primero debes ingresar a la atención de esta mesa antes de enviar un pedido."
       );
       return;
     }
@@ -1113,109 +1390,15 @@ export default function MenuQRPage() {
       setErrorPedido("");
       setPedidoEnviado(null);
 
-      const respuestaAtencion =
-        await fetch(
-          "/api/atenciones",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              mesaId:
-                menu.mesa.id,
-
-              sucursalId:
-                menu.restaurante
-                  .sucursal.id,
-
-              cantidadPersonas: 1,
-
-              metodoPagoPrevisto:
-                atencion?.metodoPagoPrevisto ??
-                metodoPagoSeleccionado,
-            }),
-          }
+      const tokenGuardado =
+        tokenAcceso ||
+        (
+          claveTokenLocal
+            ? window.localStorage.getItem(
+                claveTokenLocal
+              ) ?? ""
+            : ""
         );
-
-      const resultadoAtencion =
-        (await respuestaAtencion.json()) as ApiResponse<{
-          creada: boolean;
-
-          atencion: {
-            id: string;
-            codigo: string;
-            estado: string;
-            subtotal:
-              | number
-              | string;
-            descuento:
-              | number
-              | string;
-            total:
-              | number
-              | string;
-            fechaApertura: string;
-            metodoPagoPrevisto?:
-              | MetodoPagoPrevisto
-              | null;
-          };
-        }>;
-
-      if (
-        !respuestaAtencion.ok ||
-        !resultadoAtencion.success ||
-        !resultadoAtencion.data
-      ) {
-        throw new Error(
-          resultadoAtencion.message ||
-            "No se pudo abrir la atención de la mesa."
-        );
-      }
-
-      const atencionActual =
-        resultadoAtencion.data
-          .atencion;
-
-      setAtencion({
-        id:
-          atencionActual.id,
-        codigo:
-          atencionActual.codigo,
-        estado:
-          atencionActual.estado,
-        subtotal:
-          atencionActual.subtotal,
-        descuento:
-          atencionActual.descuento,
-        total:
-          atencionActual.total,
-        fechaApertura:
-          atencionActual.fechaApertura,
-        metodoPagoPrevisto:
-          atencionActual.metodoPagoPrevisto ??
-          metodoPagoSeleccionado,
-      });
-
-      if (
-        atencionActual.metodoPagoPrevisto
-      ) {
-        setMetodoPagoSeleccionado(
-          atencionActual.metodoPagoPrevisto
-        );
-      }
-
-      if (
-        claveAtencionLocal
-      ) {
-        window.localStorage.setItem(
-          claveAtencionLocal,
-          atencionActual.id
-        );
-      }
 
       const respuestaPedido =
         await fetch(
@@ -1230,7 +1413,7 @@ export default function MenuQRPage() {
 
             body: JSON.stringify({
               atencionId:
-                atencionActual.id,
+                atencion.id,
 
               sucursalId:
                 menu.restaurante
@@ -1238,6 +1421,9 @@ export default function MenuQRPage() {
 
               origen:
                 "CLIENTE_QR",
+
+              tokenAcceso:
+                tokenGuardado,
 
               detalles:
                 carrito.map(
@@ -1610,6 +1796,103 @@ export default function MenuQRPage() {
         </div>
       )}
 
+      {mesaOcupadaSinAcceso &&
+        menu.mesa.estado !==
+          "LIBRE" && (
+        <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
+          <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-xl">
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-orange-950 p-6 text-white">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-orange-300">
+                Mesa ocupada
+              </p>
+
+              <h2 className="mt-2 text-3xl font-black">
+                {menu.mesa.nombre}
+              </h2>
+
+              <p className="mt-2 max-w-xl text-sm text-slate-300">
+                Esta mesa ya tiene una atención activa.
+                Para proteger los pedidos de los clientes,
+                necesitas el código de acceso de esta mesa.
+              </p>
+            </div>
+
+            <div className="space-y-5 p-6">
+              <div>
+                <label className="mb-2 block text-sm font-black text-slate-700">
+                  Código de mesa
+                </label>
+
+                <input
+                  value={
+                    codigoAcceso
+                  }
+                  onChange={(
+                    evento
+                  ) => {
+                    const valor =
+                      evento.target.value
+                        .replace(
+                          /\D/g,
+                          ""
+                        )
+                        .slice(
+                          0,
+                          4
+                        );
+
+                    setCodigoAcceso(
+                      valor
+                    );
+                  }}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="0000"
+                  maxLength={4}
+                  className="w-full rounded-2xl border-2 border-slate-200 px-5 py-4 text-center text-3xl font-black tracking-[0.35em] outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  unirseAMesa
+                }
+                disabled={
+                  uniendoseMesa ||
+                  codigoAcceso.length !==
+                    4
+                }
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-4 text-lg font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {uniendoseMesa ? (
+                  <>
+                    <LoaderCircle
+                      size={21}
+                      className="animate-spin"
+                    />
+                    Verificando...
+                  </>
+                ) : (
+                  <>
+                    <Users
+                      size={21}
+                    />
+                    Unirme a esta mesa
+                  </>
+                )}
+              </button>
+
+              <div className="rounded-2xl bg-slate-100 p-4 text-center">
+                <p className="text-sm font-bold text-slate-600">
+                  Solicita el código a una persona de tu mesa o al mozo.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
       {menu.mesa.estado ===
         "LIBRE" && (
         <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
@@ -1664,11 +1947,11 @@ export default function MenuQRPage() {
 
               <div>
                 <p className="text-sm font-black text-slate-700">
-                  ¿Cómo pagarás al finalizar?
+                  Método de pago previsto (opcional)
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  Es el método previsto. El pago real se registra al final en Caja.
+                  Puedes indicarlo ahora o dejar que Caja registre el método real al pagar.
                 </p>
 
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -1731,8 +2014,7 @@ export default function MenuQRPage() {
                   ocuparMesa
                 }
                 disabled={
-                  ocupandoMesa ||
-                  !metodoPagoSeleccionado
+                  ocupandoMesa
                 }
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-lg font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -1754,6 +2036,25 @@ export default function MenuQRPage() {
                 )}
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {codigoGenerado &&
+        atencion && (
+        <div className="mx-auto max-w-6xl px-4 pt-4 md:px-6">
+          <section className="rounded-3xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
+              Código de tu mesa
+            </p>
+
+            <p className="mt-2 text-center text-4xl font-black tracking-[0.25em] text-slate-950">
+              {codigoGenerado}
+            </p>
+
+            <p className="mt-3 text-center text-sm font-semibold text-slate-600">
+              Compártelo únicamente con las personas sentadas en esta mesa.
+            </p>
           </section>
         </div>
       )}
@@ -2160,7 +2461,7 @@ export default function MenuQRPage() {
               <span className="font-black text-slate-950">
                 {pedidoEnviado.numero}
               </span>
-              . Ahora está esperando la confirmación del mozo.
+              . Ya fue registrado y enviado al flujo operativo.
             </p>
 
             <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-left">
@@ -2173,7 +2474,7 @@ export default function MenuQRPage() {
                   size={18}
                 />
                 <span className="font-bold">
-                  Esperando confirmación
+                  Pedido registrado
                 </span>
               </div>
             </div>
@@ -2411,12 +2712,6 @@ export default function MenuQRPage() {
                       );
                     })}
                   </div>
-
-                  {!metodoPagoSeleccionado && (
-                    <p className="mt-3 text-sm font-bold text-amber-800">
-                      Selecciona una opción para enviar tu primer pedido.
-                    </p>
-                  )}
                 </section>
               ) : (
                 <section className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
@@ -2447,9 +2742,7 @@ export default function MenuQRPage() {
                   enviandoPedido ||
                   carrito.length ===
                     0 ||
-                  !puedePedir ||
-                  (!atencion &&
-                    !metodoPagoSeleccionado)
+                  !puedePedir
                 }
                 className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-4 font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
               >

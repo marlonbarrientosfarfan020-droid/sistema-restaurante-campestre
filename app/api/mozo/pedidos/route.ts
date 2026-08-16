@@ -4,15 +4,53 @@ import {
 } from "next/server";
 
 import {
+  cookies,
+} from "next/headers";
+
+import {
   EstadoPedido,
   OrigenPedido,
 } from "@/app/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { fail, ok } from "@/lib/response";
+import {
+  fail,
+  ok,
+} from "@/lib/response";
+import {
+  SESSION_COOKIE,
+  verificarTokenSesion,
+} from "@/lib/session";
 import { pedidoService } from "@/services/pedido.service";
 
-function manejarError(error: unknown) {
+const ROLES_PERMITIDOS = new Set([
+  "MOZO",
+  "SUPERADMIN",
+  "ADMINISTRADOR",
+  "GERENTE",
+]);
+
+async function obtenerSesion() {
+  const store =
+    await cookies();
+
+  const token =
+    store.get(
+      SESSION_COOKIE
+    )?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  return verificarTokenSesion(
+    token
+  );
+}
+
+function manejarError(
+  error: unknown
+) {
   console.error(
     "Error en pedidos del mozo:",
     error
@@ -30,11 +68,36 @@ function manejarError(error: unknown) {
   );
 }
 
+/*
+ * ============================================================
+ * GET
+ * ============================================================
+ *
+ * Se conserva para no romper la bandeja
+ * actual de pedidos QR pendientes.
+ */
 export async function GET() {
   try {
+    const sesion =
+      await obtenerSesion();
+
+    if (!sesion) {
+      return NextResponse.json(
+        fail(
+          "Sesión no válida."
+        ),
+        {
+          status: 401,
+        }
+      );
+    }
+
     const pedidos =
       await prisma.pedido.findMany({
         where: {
+          sucursalId:
+            sesion.sucursalId,
+
           origen:
             OrigenPedido.CLIENTE_QR,
 
@@ -79,27 +142,41 @@ export async function GET() {
             },
 
             orderBy: {
-              createdAt: "asc",
+              createdAt:
+                "asc",
             },
           },
         },
 
         orderBy: {
-          fechaPedido: "asc",
+          fechaPedido:
+            "asc",
         },
       });
 
     const data =
       pedidos.map(
         (pedido) => ({
-          id: pedido.id,
-          numero: pedido.numero,
-          estado: pedido.estado,
-          origen: pedido.origen,
+          id:
+            pedido.id,
+
+          numero:
+            pedido.numero,
+
+          estado:
+            pedido.estado,
+
+          origen:
+            pedido.origen,
+
           observacion:
             pedido.observacion,
+
           subtotal:
-            Number(pedido.subtotal),
+            Number(
+              pedido.subtotal
+            ),
+
           fechaPedido:
             pedido.fechaPedido.toISOString(),
 
@@ -121,7 +198,8 @@ export async function GET() {
           detalles:
             pedido.detalles.map(
               (detalle) => ({
-                id: detalle.id,
+                id:
+                  detalle.id,
 
                 cantidad:
                   Number(
@@ -155,19 +233,211 @@ export async function GET() {
       )
     );
   } catch (error) {
-    return manejarError(error);
+    return manejarError(
+      error
+    );
   }
 }
 
+/*
+ * ============================================================
+ * POST
+ * ============================================================
+ *
+ * Pedido registrado por un trabajador.
+ *
+ * IMPORTANTE:
+ * registradoPorId y sucursalId salen
+ * de la sesión, no del navegador.
+ */
+export async function POST(
+  request: NextRequest
+) {
+  try {
+    const sesion =
+      await obtenerSesion();
+
+    if (!sesion) {
+      return NextResponse.json(
+        fail(
+          "Tu sesión expiró. Inicia sesión nuevamente."
+        ),
+        {
+          status: 401,
+        }
+      );
+    }
+
+    if (
+      !ROLES_PERMITIDOS.has(
+        sesion.rol
+      )
+    ) {
+      return NextResponse.json(
+        fail(
+          "No tienes permiso para registrar pedidos como mozo."
+        ),
+        {
+          status: 403,
+        }
+      );
+    }
+
+    const body =
+      await request.json();
+
+    const atencionId =
+      typeof body.atencionId ===
+      "string"
+        ? body.atencionId.trim()
+        : "";
+
+    if (!atencionId) {
+      return NextResponse.json(
+        fail(
+          "La atención es obligatoria."
+        ),
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const atencion =
+      await prisma.atencion.findFirst({
+        where: {
+          id:
+            atencionId,
+
+          sucursalId:
+            sesion.sucursalId,
+
+          estado: {
+            in: [
+              "ABIERTA",
+            ],
+          },
+        },
+
+        select: {
+          id: true,
+          mesaId: true,
+          estado: true,
+        },
+      });
+
+    if (!atencion) {
+      return NextResponse.json(
+        fail(
+          "La atención no está disponible para registrar pedidos."
+        ),
+        {
+          status: 409,
+        }
+      );
+    }
+
+    const pedido =
+      await pedidoService.crear({
+        atencionId,
+        sucursalId:
+          sesion.sucursalId,
+
+        registradoPorId:
+          sesion.sub,
+
+        origen:
+          "MOZO",
+
+        observacion:
+          typeof body.observacion ===
+          "string"
+            ? body.observacion
+            : undefined,
+
+        detalles:
+          Array.isArray(
+            body.detalles
+          )
+            ? body.detalles.map(
+                (
+                  detalle: {
+                    productoId?: string;
+                    cantidad?: number;
+                    observacion?: string;
+                  }
+                ) => ({
+                  productoId:
+                    typeof detalle.productoId ===
+                    "string"
+                      ? detalle.productoId
+                      : "",
+
+                  cantidad:
+                    Number(
+                      detalle.cantidad ??
+                        0
+                    ),
+
+                  observacion:
+                    typeof detalle.observacion ===
+                    "string"
+                      ? detalle.observacion
+                      : undefined,
+                })
+              )
+            : [],
+      });
+
+    return NextResponse.json(
+      ok(
+        pedido,
+        "Pedido enviado correctamente a Cocina."
+      ),
+      {
+        status: 201,
+      }
+    );
+  } catch (error) {
+    return manejarError(
+      error
+    );
+  }
+}
+
+/*
+ * ============================================================
+ * PATCH
+ * ============================================================
+ *
+ * Se conserva la confirmación manual
+ * de pedidos QR mientras terminamos de
+ * decidir si se automatiza por completo.
+ */
 export async function PATCH(
   request: NextRequest
 ) {
   try {
+    const sesion =
+      await obtenerSesion();
+
+    if (!sesion) {
+      return NextResponse.json(
+        fail(
+          "Sesión no válida."
+        ),
+        {
+          status: 401,
+        }
+      );
+    }
+
     const body =
       await request.json();
 
     const pedidoId =
-      typeof body.id === "string"
+      typeof body.id ===
+      "string"
         ? body.id.trim()
         : "";
 
@@ -183,9 +453,13 @@ export async function PATCH(
     }
 
     const pedido =
-      await prisma.pedido.findUnique({
+      await prisma.pedido.findFirst({
         where: {
-          id: pedidoId,
+          id:
+            pedidoId,
+
+          sucursalId:
+            sesion.sucursalId,
         },
 
         select: {
@@ -226,7 +500,7 @@ export async function PATCH(
     ) {
       return NextResponse.json(
         fail(
-          "Este pedido ya fue confirmado o ya cambió de estado."
+          "Este pedido ya fue confirmado o cambió de estado."
         ),
         {
           status: 409,
@@ -243,10 +517,12 @@ export async function PATCH(
     return NextResponse.json(
       ok(
         actualizado,
-        "Pedido confirmado correctamente. Ya fue enviado a Cocina."
+        "Pedido confirmado. Ya fue enviado a Cocina."
       )
     );
   } catch (error) {
-    return manejarError(error);
+    return manejarError(
+      error
+    );
   }
 }

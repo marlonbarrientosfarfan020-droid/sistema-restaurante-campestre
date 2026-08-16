@@ -319,6 +319,11 @@ model Atencion {
 
   estado           EstadoAtencion @default(ABIERTA)
   cantidadPersonas Int            @default(1)
+  // Acceso temporal de clientes QR a esta atención.
+  // Se genera cuando comienza una nueva atención y deja
+  // de ser válido cuando la atención termina.
+  codigoAccesoMesa String?
+  tokenAccesoMesa  String?        @unique
 
   metodoPagoPrevisto MetodoPago?
 
@@ -345,6 +350,7 @@ model Atencion {
   @@index([mesaId, estado])
   @@index([mozoId])
   @@index([fechaApertura])
+  @@index([codigoAccesoMesa])
 }
 
 /**

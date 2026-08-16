@@ -10,12 +10,12 @@ import {
 import Link from "next/link";
 
 import {
-  ArrowLeft,
   BellRing,
   ChefHat,
   CircleDollarSign,
   LoaderCircle,
   RefreshCcw,
+  Search,
   ShoppingBasket,
   Users,
 } from "lucide-react";
@@ -25,9 +25,7 @@ type AtencionActual = {
   codigo: string;
   estado: string;
   cantidadPersonas: number;
-  metodoPagoPrevisto:
-    | string
-    | null;
+  metodoPagoPrevisto: string | null;
   subtotal: string | number;
   descuento: string | number;
   total: string | number;
@@ -43,15 +41,11 @@ type Mesa = {
   qrCode: string | null;
   estado: string;
   activa: boolean;
-
   zona: {
     id: string;
     nombre: string;
   };
-
-  atencionActual:
-    | AtencionActual
-    | null;
+  atencionActual: AtencionActual | null;
 };
 
 type SucursalPrincipal = {
@@ -76,10 +70,7 @@ function dinero(
     | null
     | undefined
 ) {
-  const numero =
-    Number(valor ?? 0);
-
-  return `S/ ${numero.toFixed(2)}`;
+  return `S/ ${Number(valor ?? 0).toFixed(2)}`;
 }
 
 function estadoVisual(
@@ -91,62 +82,63 @@ function estadoVisual(
       texto: string;
       clases: string;
       punto: string;
+      accion: string;
     }
   > = {
     LIBRE: {
       texto: "Libre",
       clases:
         "border-slate-200 bg-white",
-      punto:
-        "bg-slate-400",
+      punto: "bg-slate-400",
+      accion: "ABRIR Y PEDIR",
     },
 
     OCUPADA: {
       texto: "Ocupada",
       clases:
         "border-amber-300 bg-amber-50",
-      punto:
-        "bg-amber-500",
+      punto: "bg-amber-500",
+      accion: "ATENDER",
     },
 
     PEDIDO_PENDIENTE: {
       texto: "Pedido pendiente",
       clases:
         "border-orange-300 bg-orange-50",
-      punto:
-        "bg-orange-500",
+      punto: "bg-orange-500",
+      accion: "ATENDER",
     },
 
     CONSUMIENDO: {
       texto: "Consumiendo",
       clases:
         "border-yellow-300 bg-yellow-50",
-      punto:
-        "bg-yellow-500",
+      punto: "bg-yellow-500",
+      accion: "NUEVO PEDIDO",
     },
 
     SOLICITO_CUENTA: {
       texto: "Solicitó cuenta",
       clases:
         "border-blue-300 bg-blue-50",
-      punto:
-        "bg-blue-500",
+      punto: "bg-blue-500",
+      accion: "VER CUENTA",
     },
 
     PAGADA: {
       texto: "Pagada",
       clases:
         "border-emerald-300 bg-emerald-50",
-      punto:
-        "bg-emerald-500",
+      punto: "bg-emerald-500",
+      accion: "REVISAR",
     },
 
     LIMPIEZA: {
       texto: "Limpieza",
       clases:
         "border-violet-300 bg-violet-50",
-      punto:
-        "bg-violet-500",
+      punto: "bg-violet-500",
+      accion: "REVISAR",
     },
   };
 
@@ -155,8 +147,8 @@ function estadoVisual(
       texto: estado,
       clases:
         "border-slate-200 bg-white",
-      punto:
-        "bg-slate-400",
+      punto: "bg-slate-400",
+      accion: "ATENDER",
     }
   );
 }
@@ -176,13 +168,31 @@ export default function MozoPage() {
   const [cargando, setCargando] =
     useState(true);
 
+  const [actualizando, setActualizando] =
+    useState(false);
+
   const [error, setError] =
     useState("");
 
+  const [busqueda, setBusqueda] =
+    useState("");
+
+  const [filtro, setFiltro] =
+    useState<
+      "TODAS" | "LIBRES" | "OCUPADAS" | "CUENTA"
+    >("TODAS");
+
   const cargarDatos =
-    useCallback(async () => {
+    useCallback(async (
+      mostrarCargaCompleta = false
+    ) => {
       try {
-        setCargando(true);
+        if (mostrarCargaCompleta) {
+          setCargando(true);
+        } else {
+          setActualizando(true);
+        }
+
         setError("");
 
         const respuestaSucursal =
@@ -254,15 +264,18 @@ export default function MozoPage() {
         );
       } finally {
         setCargando(false);
+        setActualizando(false);
       }
     }, []);
 
   useEffect(() => {
-    cargarDatos();
+    cargarDatos(true);
 
     const intervalo =
       window.setInterval(
-        cargarDatos,
+        () => {
+          cargarDatos(false);
+        },
         5000
       );
 
@@ -293,13 +306,14 @@ export default function MozoPage() {
       [mesas]
     );
 
-  const pedidosPendientes =
+  const mesasCuenta =
     useMemo(
       () =>
         mesas.filter(
           (mesa) =>
             mesa.estado ===
-            "PEDIDO_PENDIENTE"
+              "SOLICITO_CUENTA" ||
+            mesa.estado === "PAGADA"
         ).length,
       [mesas]
     );
@@ -319,6 +333,61 @@ export default function MozoPage() {
       [mesas]
     );
 
+  const mesasFiltradas =
+    useMemo(() => {
+      const texto =
+        busqueda
+          .trim()
+          .toLocaleLowerCase(
+            "es-PE"
+          );
+
+      return mesas.filter(
+        (mesa) => {
+          const coincideBusqueda =
+            !texto ||
+            mesa.nombre
+              .toLocaleLowerCase(
+                "es-PE"
+              )
+              .includes(texto) ||
+            String(
+              mesa.numero
+            ).includes(texto) ||
+            mesa.zona.nombre
+              .toLocaleLowerCase(
+                "es-PE"
+              )
+              .includes(texto);
+
+          const coincideFiltro =
+            filtro === "TODAS" ||
+            (filtro === "LIBRES" &&
+              mesa.estado ===
+                "LIBRE") ||
+            (filtro === "OCUPADAS" &&
+              mesa.estado !==
+                "LIBRE") ||
+            (filtro === "CUENTA" &&
+              [
+                "SOLICITO_CUENTA",
+                "PAGADA",
+              ].includes(
+                mesa.estado
+              ));
+
+          return (
+            coincideBusqueda &&
+            coincideFiltro
+          );
+        }
+      );
+    }, [
+      mesas,
+      busqueda,
+      filtro,
+    ]);
+
   if (cargando) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -329,7 +398,7 @@ export default function MozoPage() {
           />
 
           <p className="mt-4 font-black text-slate-700">
-            Cargando mesas...
+            Preparando modo mozo...
           </p>
         </div>
       </main>
@@ -337,282 +406,301 @@ export default function MozoPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 p-4 md:p-6">
-      <div className="mx-auto max-w-[1500px] space-y-5">
-        <header className="rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950 p-6 text-white shadow-xl">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+    <main className="min-h-screen bg-slate-100 pb-24">
+      <header className="sticky top-0 z-30 bg-slate-950 px-4 pb-4 pt-4 text-white shadow-xl md:px-6">
+        <div className="mx-auto max-w-[1500px]">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
-                Restaurante Chinka Chinka
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-400">
+                Chinka Chinka
               </p>
 
-              <h1 className="mt-2 flex items-center gap-3 text-3xl font-black">
-                <Users size={34} />
-                Panel del mozo
+              <h1 className="mt-1 text-2xl font-black md:text-3xl">
+                Modo Mozo
               </h1>
 
-              <p className="mt-2 text-sm text-slate-300">
-                Atiende mesas, registra pedidos y revisa solicitudes QR.
-              </p>
-
               {sucursal && (
-                <p className="mt-2 text-xs font-bold text-slate-400">
+                <p className="mt-1 text-xs font-bold text-slate-400">
                   {sucursal.nombre}
                 </p>
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/dashboard/mozo/pedidos"
-                className="flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 font-black text-slate-950"
-              >
-                <BellRing size={18} />
-                Pedidos QR
-              </Link>
-
-              <button
-                type="button"
-                onClick={
-                  cargarDatos
+            <button
+              type="button"
+              onClick={() =>
+                cargarDatos(false)
+              }
+              disabled={
+                actualizando
+              }
+              className="rounded-2xl bg-white/10 p-3 text-white"
+              title="Actualizar"
+            >
+              <RefreshCcw
+                size={21}
+                className={
+                  actualizando
+                    ? "animate-spin"
+                    : ""
                 }
-                className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 font-black text-slate-950"
-              >
-                <RefreshCcw
-                  size={18}
-                />
-                Actualizar
-              </button>
-
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 font-black text-white"
-              >
-                <ArrowLeft size={18} />
-                Volver
-              </Link>
-            </div>
+              />
+            </button>
           </div>
-        </header>
 
+          <div className="mt-4 relative">
+            <Search
+              size={19}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+
+            <input
+              value={busqueda}
+              onChange={(evento) =>
+                setBusqueda(
+                  evento.target.value
+                )
+              }
+              placeholder="Buscar mesa..."
+              className="w-full rounded-2xl border border-white/10 bg-white px-11 py-3.5 font-bold text-slate-950 outline-none"
+            />
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1500px] space-y-4 p-4 md:p-6">
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">
             {error}
           </div>
         )}
 
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-bold text-slate-500">
-              Libres
+        <section className="grid grid-cols-4 gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              setFiltro("LIBRES")
+            }
+            className={`rounded-2xl p-3 text-left shadow-sm ${
+              filtro === "LIBRES"
+                ? "bg-slate-950 text-white"
+                : "bg-white"
+            }`}
+          >
+            <p className="text-[10px] font-bold opacity-70">
+              LIBRES
             </p>
-
-            <p className="mt-1 text-3xl font-black">
+            <p className="mt-1 text-2xl font-black">
               {mesasLibres}
             </p>
-          </div>
+          </button>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-bold text-slate-500">
-              Ocupadas
+          <button
+            type="button"
+            onClick={() =>
+              setFiltro(
+                "OCUPADAS"
+              )
+            }
+            className={`rounded-2xl p-3 text-left shadow-sm ${
+              filtro === "OCUPADAS"
+                ? "bg-slate-950 text-white"
+                : "bg-white"
+            }`}
+          >
+            <p className="text-[10px] font-bold opacity-70">
+              OCUPADAS
             </p>
-
-            <p className="mt-1 text-3xl font-black">
+            <p className="mt-1 text-2xl font-black">
               {mesasOcupadas}
             </p>
-          </div>
+          </button>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-bold text-slate-500">
-              Pedidos pendientes
+          <button
+            type="button"
+            onClick={() =>
+              setFiltro("CUENTA")
+            }
+            className={`rounded-2xl p-3 text-left shadow-sm ${
+              filtro === "CUENTA"
+                ? "bg-slate-950 text-white"
+                : "bg-white"
+            }`}
+          >
+            <p className="text-[10px] font-bold opacity-70">
+              CUENTA
             </p>
-
-            <p className="mt-1 text-3xl font-black text-orange-600">
-              {pedidosPendientes}
+            <p className="mt-1 text-2xl font-black">
+              {mesasCuenta}
             </p>
-          </div>
+          </button>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-bold text-slate-500">
-              Consumo activo
+          <button
+            type="button"
+            onClick={() =>
+              setFiltro("TODAS")
+            }
+            className={`rounded-2xl p-3 text-left shadow-sm ${
+              filtro === "TODAS"
+                ? "bg-slate-950 text-white"
+                : "bg-white"
+            }`}
+          >
+            <p className="text-[10px] font-bold opacity-70">
+              CONSUMO
             </p>
-
-            <p className="mt-1 text-2xl font-black text-emerald-600">
+            <p className="mt-1 text-base font-black">
               {dinero(consumo)}
             </p>
-          </div>
+          </button>
         </section>
 
-        <section className="rounded-3xl bg-white p-4 shadow-sm md:p-5">
-          <div className="mb-4 flex items-center justify-between">
+        <section>
+          <div className="mb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-black text-slate-950">
+              <h2 className="text-xl font-black text-slate-950">
                 Mesas
               </h2>
-
-              <p className="text-sm text-slate-500">
-                Toca una mesa para atenderla.
+              <p className="text-xs text-slate-500">
+                Toca una mesa y atiende.
               </p>
             </div>
 
             <ChefHat
-              size={28}
+              size={26}
               className="text-amber-500"
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {mesas.map(
-              (mesa) => {
-                const visual =
-                  estadoVisual(
-                    mesa.estado
-                  );
+          {mesasFiltradas.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+              No encontramos mesas.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+              {mesasFiltradas.map(
+                (mesa) => {
+                  const visual =
+                    estadoVisual(
+                      mesa.estado
+                    );
 
-                const tieneAtencion =
-                  Boolean(
-                    mesa.atencionActual
-                  );
-
-                return (
-                  <Link
-                    key={mesa.id}
-                    href={
-                      tieneAtencion
-                        ? `/dashboard/mesas/${mesa.id}`
-                        : `/dashboard/mesas/${mesa.id}`
-                    }
-                    className={`rounded-3xl border-2 p-5 transition hover:-translate-y-0.5 hover:shadow-md ${visual.clases}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-wider text-slate-500">
-                          {
-                            mesa.zona
-                              .nombre
-                          }
-                        </p>
-
-                        <h3 className="mt-1 text-3xl font-black text-slate-950">
-                          {mesa.nombre}
-                        </h3>
-                      </div>
-
-                      <span
-                        className={`mt-1 h-3 w-3 rounded-full ${visual.punto}`}
-                      />
-                    </div>
-
-                    <p className="mt-3 inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-black text-slate-700">
-                      {visual.texto}
-                    </p>
-
-                    {mesa.atencionActual ? (
-                      <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm">
-                        <div className="flex justify-between gap-3">
-                          <span className="text-slate-500">
-                            Atención
-                          </span>
-
-                          <span className="font-black">
+                  return (
+                    <Link
+                      key={mesa.id}
+                      href={`/dashboard/mozo/mesa/${mesa.id}`}
+                      className={`relative overflow-hidden rounded-3xl border-2 p-4 transition active:scale-[0.98] ${visual.clases}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">
                             {
-                              mesa
-                                .atencionActual
-                                .codigo
+                              mesa.zona
+                                .nombre
                             }
-                          </span>
+                          </p>
+
+                          <h3 className="mt-1 text-2xl font-black text-slate-950 md:text-3xl">
+                            {mesa.nombre}
+                          </h3>
                         </div>
 
-                        <div className="flex justify-between gap-3">
-                          <span className="text-slate-500">
-                            Pedidos
-                          </span>
-
-                          <span className="font-black">
-                            {
-                              mesa
-                                .atencionActual
-                                .cantidadPedidos
-                            }
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between gap-3">
-                          <span className="text-slate-500">
-                            Total
-                          </span>
-
-                          <span className="font-black text-emerald-700">
-                            {dinero(
-                              mesa
-                                .atencionActual
-                                .total
-                            )}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 font-black text-white">
-                          <ShoppingBasket
-                            size={16}
-                          />
-                          Atender mesa
-                        </div>
+                        <span
+                          className={`mt-1 h-3 w-3 shrink-0 rounded-full ${visual.punto}`}
+                        />
                       </div>
-                    ) : (
-                      <div className="mt-4 border-t border-slate-200 pt-4">
-                        <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-3 py-2 font-black text-slate-950">
-                          <Users
-                            size={16}
-                          />
-                          Abrir atención
+
+                      <span className="mt-3 inline-flex rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black text-slate-700">
+                        {visual.texto}
+                      </span>
+
+                      {mesa.atencionActual ? (
+                        <div className="mt-3 border-t border-slate-200 pt-3">
+                          <div className="flex items-end justify-between gap-2">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-500">
+                                Consumo
+                              </p>
+
+                              <p className="text-lg font-black text-emerald-700">
+                                {dinero(
+                                  mesa
+                                    .atencionActual
+                                    .total
+                                )}
+                              </p>
+                            </div>
+
+                            <div className="text-right">
+                              <p className="text-[10px] font-bold text-slate-500">
+                                Pedidos
+                              </p>
+
+                              <p className="font-black">
+                                {
+                                  mesa
+                                    .atencionActual
+                                    .cantidadPedidos
+                                }
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2.5 text-xs font-black text-white">
+                            <ShoppingBasket
+                              size={15}
+                            />
+                            {visual.accion}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </Link>
-                );
-              }
-            )}
-          </div>
+                      ) : (
+                        <div className="mt-3 border-t border-slate-200 pt-3">
+                          <div className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-3 py-2.5 text-xs font-black text-slate-950">
+                            <Users
+                              size={15}
+                            />
+                            ABRIR Y PEDIR
+                          </div>
+                        </div>
+                      )}
+                    </Link>
+                  );
+                }
+              )}
+            </div>
+          )}
         </section>
+      </div>
 
-        <section className="grid gap-3 md:grid-cols-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-3 gap-2">
+          <Link
+            href="/dashboard/mozo"
+            className="flex flex-col items-center justify-center rounded-xl bg-slate-950 px-3 py-2 text-[10px] font-black text-white"
+          >
+            <Users size={20} />
+            MESAS
+          </Link>
+
           <Link
             href="/dashboard/mozo/pedidos"
-            className="flex items-center justify-between rounded-3xl bg-slate-950 p-5 text-white"
+            className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-[10px] font-black text-slate-700"
           >
-            <div>
-              <p className="text-sm font-bold text-slate-400">
-                Pedidos desde QR
-              </p>
-
-              <p className="mt-1 text-xl font-black">
-                Revisar solicitudes
-              </p>
-            </div>
-
-            <BellRing size={30} />
+            <BellRing size={20} />
+            QR
           </Link>
 
           <Link
             href="/dashboard/caja"
-            className="flex items-center justify-between rounded-3xl bg-emerald-600 p-5 text-white"
+            className="flex flex-col items-center justify-center rounded-xl px-3 py-2 text-[10px] font-black text-slate-700"
           >
-            <div>
-              <p className="text-sm font-bold text-emerald-100">
-                Cuentas
-              </p>
-
-              <p className="mt-1 text-xl font-black">
-                Ir a Caja
-              </p>
-            </div>
-
             <CircleDollarSign
-              size={30}
+              size={20}
             />
+            CUENTAS
           </Link>
-        </section>
-      </div>
+        </div>
+      </nav>
     </main>
   );
 }
