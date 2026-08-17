@@ -746,6 +746,15 @@ export default function DashboardPage() {
               />
               Mesas y atención
             </Link>
+            {puedeAdministrar && (
+  <Link
+    href="/dashboard/mesas/administrar"
+    className="ml-4 flex w-[calc(100%-1rem)] items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-slate-900 hover:text-white"
+  >
+    <Settings size={18} />
+    Administrar mesas
+  </Link>
+)}
 
             <Link
               href="/dashboard/cocina"
@@ -1561,6 +1570,15 @@ export default function DashboardPage() {
                     </span>
                     →
                   </Link>
+                  {sesion?.rol === "ADMINISTRADOR" && (
+  <Link
+    href="/dashboard/mesas/administrar"
+    className="ml-4 flex w-[calc(100%-1rem)] items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-400 transition hover:bg-slate-900 hover:text-white"
+  >
+    <Settings size={18} />
+    Administrar mesas
+  </Link>
+)}
 
                   <Link
                     href="/dashboard/cocina"
