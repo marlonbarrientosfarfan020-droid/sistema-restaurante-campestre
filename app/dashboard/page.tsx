@@ -10,6 +10,7 @@ import {
   Clock3,
   FolderTree,
   LayoutDashboard,
+  Menu,
   LoaderCircle,
   LogOut,
   PackageCheck,
@@ -27,6 +28,7 @@ import {
   UserCog,
   Users,
   UtensilsCrossed,
+  X,
 } from "lucide-react";
 
 import {
@@ -184,6 +186,12 @@ export default function DashboardPage() {
   const [
     cerrandoSesion,
     setCerrandoSesion,
+  ] =
+    useState(false);
+
+  const [
+    menuMovilAbierto,
+    setMenuMovilAbierto,
   ] =
     useState(false);
 
@@ -661,7 +669,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100">
+    <main className="min-h-screen bg-slate-100 pb-24 lg:pb-0">
       <div className="flex min-h-screen">
         <aside className="hidden w-72 shrink-0 border-r border-slate-800 bg-slate-950 px-5 py-6 text-white lg:block">
           <div className="mb-10 flex items-center gap-3">
@@ -719,6 +727,14 @@ export default function DashboardPage() {
                 size={20}
               />
               Panel principal
+            </Link>
+
+            <Link
+              href="/dashboard/mozo"
+              className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-slate-300 transition hover:bg-slate-900"
+            >
+              <Users size={20} />
+              Modo Mozo
             </Link>
 
             <Link
@@ -1584,6 +1600,259 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
+    
+      {/* =====================================================
+          NAVEGACIÓN MÓVIL
+          Solo aparece debajo de lg.
+         ===================================================== */}
+      <nav className="fixed bottom-0 left-0 right-0 z-[80] border-t border-slate-200 bg-white/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(15,23,42,0.10)] backdrop-blur-xl lg:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
+          <Link
+            href="/dashboard"
+            className="flex flex-col items-center justify-center rounded-2xl bg-slate-950 px-2 py-2 text-[10px] font-black text-white"
+          >
+            <LayoutDashboard size={20} />
+            Inicio
+          </Link>
+
+          <Link
+            href="/dashboard/mesas"
+            className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600"
+          >
+            <UtensilsCrossed size={20} />
+            Mesas
+          </Link>
+
+          <Link
+            href="/dashboard/pedidos"
+            className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600"
+          >
+            <ReceiptText size={20} />
+            Pedidos
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setMenuMovilAbierto(true)}
+            className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600"
+          >
+            <Menu size={20} />
+            Más
+          </button>
+        </div>
+      </nav>
+
+      {menuMovilAbierto && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm lg:hidden">
+          <button
+            type="button"
+            aria-label="Cerrar menú"
+            onClick={() => setMenuMovilAbierto(false)}
+            className="absolute inset-0"
+          />
+
+          <section className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-[34px] bg-white p-4 shadow-2xl">
+            <div className="mx-auto max-w-lg">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-amber-400">
+                    <UtensilsCrossed size={22} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">
+                      Chinka Chinka
+                    </p>
+
+                    <h3 className="truncate text-lg font-black text-slate-950">
+                      {sesion
+                        ? `${sesion.nombres} ${sesion.apellidos}`
+                        : "Menú principal"}
+                    </h3>
+
+                    <p className="text-xs font-bold text-slate-500">
+                      {sesion?.rol ?? ""}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-xl bg-slate-100 p-2.5 text-slate-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Link
+                  href="/dashboard/mozo"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-amber-200 bg-amber-50 p-4 active:scale-[0.98]"
+                >
+                  <Users size={23} className="text-amber-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Modo Mozo
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Atención rápida
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/cocina"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-orange-200 bg-orange-50 p-4 active:scale-[0.98]"
+                >
+                  <ChefHat size={23} className="text-orange-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Cocina
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Preparación
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/entregas"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-violet-200 bg-violet-50 p-4 active:scale-[0.98]"
+                >
+                  <ShoppingBag size={23} className="text-violet-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Entregas
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Pedidos listos
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/caja"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 active:scale-[0.98]"
+                >
+                  <CircleDollarSign size={23} className="text-emerald-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Caja
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Cobros y cuentas
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/productos"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
+                >
+                  <ShoppingBasket size={23} className="text-slate-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Productos
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Carta e inventario
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/categorias"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
+                >
+                  <FolderTree size={23} className="text-slate-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Categorías
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Organización
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/comprobantes"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
+                >
+                  <WalletCards size={23} className="text-slate-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Comprobantes
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Boletas y facturas
+                  </p>
+                </Link>
+
+                <Link
+                  href="/dashboard/pedidos"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
+                >
+                  <ReceiptText size={23} className="text-slate-700" />
+                  <p className="mt-3 font-black text-slate-950">
+                    Pedidos
+                  </p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Seguimiento
+                  </p>
+                </Link>
+              </div>
+
+              {puedeAdministrar && (
+                <div className="mt-5">
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    Administración
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Link
+                      href="/dashboard/configuracion/usuarios"
+                      onClick={() => setMenuMovilAbierto(false)}
+                      className="rounded-2xl border border-blue-200 bg-blue-50 p-4 active:scale-[0.98]"
+                    >
+                      <UserCog size={23} className="text-blue-700" />
+                      <p className="mt-3 font-black text-slate-950">
+                        Usuarios
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        Roles y accesos
+                      </p>
+                    </Link>
+
+                    <Link
+                      href="/dashboard/configuracion"
+                      onClick={() => setMenuMovilAbierto(false)}
+                      className="rounded-2xl border border-blue-200 bg-blue-50 p-4 active:scale-[0.98]"
+                    >
+                      <Settings size={23} className="text-blue-700" />
+                      <p className="mt-3 font-black text-slate-950">
+                        Configuración
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        Sistema
+                      </p>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={cerrarSesion}
+                disabled={cerrandoSesion}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-4 font-black text-red-700 disabled:opacity-50"
+              >
+                <LogOut size={19} />
+                {cerrandoSesion
+                  ? "Cerrando..."
+                  : "Cerrar sesión"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
     </main>
   );
 }
