@@ -118,7 +118,7 @@ export async function GET(
         },
       });
 
-    const zonas =
+ let zonas =
       await prisma.zona.findMany({
         where: {
           sucursalId:
@@ -134,6 +134,21 @@ export async function GET(
           nombre: true,
         },
       });
+
+    // AUTO-CREACIÓN: Si la sucursal no tiene zonas aún, crea la primera por defecto
+    if (zonas.length === 0) {
+      const zonaPrincipal = await prisma.zona.create({
+        data: {
+          sucursalId: sesion.sucursalId,
+          nombre: "Salón Principal",
+        },
+        select: {
+          id: true,
+          nombre: true,
+        },
+      });
+      zonas = [zonaPrincipal];
+    }
 
     return NextResponse.json({
       success: true,

@@ -202,42 +202,32 @@ export async function PATCH(
       );
     }
 
-    const actualizada =
-      await prisma.mesa.update({
-        where: {
-          id: mesaId,
-        },
-
-        data: {
-          zonaId,
-          numero,
-
-          nombre:
-            nombre ||
-            `Mesa ${String(
-              numero
-            ).padStart(2, "0")}`,
-
-          capacidad,
-        },
-
-        select: {
-          id: true,
-          numero: true,
-          nombre: true,
-          capacidad: true,
-          qrCode: true,
-          estado: true,
-          activa: true,
-
-          zona: {
-            select: {
-              id: true,
-              nombre: true,
-            },
-          },
-        },
-      });
+    const actualizada = await prisma.mesa.update({
+  where: {
+    id: mesaId,
+  },
+  data: {
+    zonaId,
+    numero,
+    nombre: nombre || `Mesa ${String(numero).padStart(2, "0")}`,
+    capacidad,
+  },
+  select: {
+    id: true,
+    numero: true,
+    nombre: true,
+    capacidad: true,
+    qrCode: true,
+    estado: true,
+    activa: true,
+    zona: {
+      select: {
+        id: true,
+        nombre: true,
+      },
+    },
+  },
+});
 
     return NextResponse.json({
       success: true,
