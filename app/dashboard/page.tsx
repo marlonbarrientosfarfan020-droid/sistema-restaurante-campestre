@@ -130,23 +130,23 @@ function Tarjeta({
   icono: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-500">
             {titulo}
           </p>
 
-          <p className="mt-2 text-3xl font-black text-slate-950">
+          <p className="mt-1 text-2xl font-black text-slate-950 sm:mt-2 sm:text-3xl">
             {valor}
           </p>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
             {descripcion}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-slate-950 p-3 text-white">
+        <div className="rounded-xl bg-slate-950 p-2.5 text-white sm:rounded-2xl sm:p-3">
           {icono}
         </div>
       </div>
@@ -669,7 +669,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 pb-24 lg:pb-0">
+    <main className="min-h-screen overflow-x-hidden bg-slate-100 pb-24 lg:pb-0">
       <div className="flex min-h-screen">
         <aside className="hidden w-72 shrink-0 border-r border-slate-800 bg-slate-950 px-5 py-6 text-white lg:block">
           <div className="mb-10 flex items-center gap-3">
@@ -866,29 +866,29 @@ export default function DashboardPage() {
           </nav>
         </aside>
 
-        <section className="min-w-0 flex-1 p-4 md:p-7">
+        <section className="min-w-0 flex-1 p-3 sm:p-4 md:p-7">
           <div className="mx-auto max-w-[1600px] space-y-6">
-            <header className="rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 p-6 text-white shadow-xl md:p-8">
+            <header className="rounded-[26px] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-xl sm:p-6 md:rounded-3xl md:p-8">
               <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                 <div>
-                  <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-300">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300 sm:text-xs md:text-sm">
                     Restaurante Chinka Chinka
                   </p>
 
-                  <h2 className="mt-2 flex items-center gap-3 text-3xl font-black md:text-4xl">
+                  <h2 className="mt-2 flex items-center gap-2 text-2xl font-black sm:text-3xl md:gap-3 md:text-4xl">
                     <BarChart3
                       size={38}
                     />
                     Panel principal
                   </h2>
 
-                  <p className="mt-3 max-w-2xl text-slate-300">
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:mt-3 sm:text-base">
                     Resumen operativo e inventario en tiempo real. Controla mesas, pedidos, consumo abierto y productos que necesitan reposición.
                   </p>
                 </div>
 
-                <div className="flex gap-3">
-                  <div className="rounded-2xl bg-white/10 px-5 py-3">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+                  <div className="rounded-2xl bg-white/10 px-4 py-3 sm:px-5">
                     <p className="text-xs text-slate-300">
                       Sucursal
                     </p>
@@ -910,7 +910,7 @@ export default function DashboardPage() {
                       cargando ||
                       cargandoProductos
                     }
-                    className="flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-slate-950 disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 disabled:opacity-50 sm:px-5 sm:text-base"
                   >
                     <RefreshCcw
                       size={19}
@@ -927,7 +927,7 @@ export default function DashboardPage() {
               </div>
             </header>
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
               <Tarjeta
                 titulo="Mesas ocupadas"
                 valor={String(
@@ -992,7 +992,7 @@ export default function DashboardPage() {
                     Estado del stock en tiempo real
                   </h3>
 
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
                     Productos con control de stock registrados en el catálogo.
                   </p>
                 </div>
@@ -1011,15 +1011,15 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 p-3 shadow-sm sm:rounded-3xl sm:p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-bold text-emerald-700">
                         Stock normal
                       </p>
 
-                      <p className="mt-2 text-3xl font-black text-emerald-700">
+                      <p className="mt-1 text-xl font-black text-emerald-700 sm:mt-2 sm:text-3xl">
                         {cargandoProductos
                           ? "..."
                           : productosStockNormal}
@@ -1034,14 +1034,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-orange-200 bg-orange-50 p-5 shadow-sm">
+                <div className="rounded-[22px] border border-orange-200 bg-orange-50 p-3 shadow-sm sm:rounded-3xl sm:p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-bold text-orange-700">
                         Stock bajo
                       </p>
 
-                      <p className="mt-2 text-3xl font-black text-orange-700">
+                      <p className="mt-1 text-xl font-black text-orange-700 sm:mt-2 sm:text-3xl">
                         {cargandoProductos
                           ? "..."
                           : productosStockBajo.length}
@@ -1056,14 +1056,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                <div className="rounded-[22px] border border-red-200 bg-red-50 p-3 shadow-sm sm:rounded-3xl sm:p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-bold text-red-700">
                         Agotados
                       </p>
 
-                      <p className="mt-2 text-3xl font-black text-red-700">
+                      <p className="mt-1 text-xl font-black text-red-700 sm:mt-2 sm:text-3xl">
                         {cargandoProductos
                           ? "..."
                           : productosAgotados.length}
@@ -1079,7 +1079,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+              <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-5 md:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-black uppercase tracking-[0.18em] text-red-600">
@@ -1220,9 +1220,9 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            <section className="grid gap-5 xl:grid-cols-3">
+            <section className="grid gap-4 sm:gap-5 xl:grid-cols-3">
               <div className="xl:col-span-2 space-y-5">
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
                   <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                     <div>
                       <p className="text-sm font-black uppercase tracking-wider text-blue-600">
@@ -1246,13 +1246,13 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl bg-blue-50 p-4">
+                  <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-4 xl:grid-cols-4">
+                    <div className="rounded-2xl bg-blue-50 p-3 sm:p-4">
                       <p className="text-xs font-black uppercase tracking-wider text-blue-700">
                         Ventas hoy
                       </p>
 
-                      <p className="mt-2 text-2xl font-black text-slate-950">
+                      <p className="mt-1 text-xl font-black text-slate-950 sm:mt-2 sm:text-2xl">
                         {cargandoMetricas
                           ? "..."
                           : `S/ ${(metricas?.ventasHoy ?? 0).toFixed(2)}`}
@@ -1270,12 +1270,12 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-amber-50 p-4">
+                    <div className="rounded-2xl bg-amber-50 p-3 sm:p-4">
                       <p className="text-xs font-black uppercase tracking-wider text-amber-700">
                         Pedidos hoy
                       </p>
 
-                      <p className="mt-2 text-2xl font-black text-slate-950">
+                      <p className="mt-1 text-xl font-black text-slate-950 sm:mt-2 sm:text-2xl">
                         {cargandoMetricas
                           ? "..."
                           : metricas?.pedidosHoy ?? 0}
@@ -1286,12 +1286,12 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-emerald-50 p-4">
+                    <div className="rounded-2xl bg-emerald-50 p-3 sm:p-4">
                       <p className="text-xs font-black uppercase tracking-wider text-emerald-700">
                         Ticket promedio
                       </p>
 
-                      <p className="mt-2 text-2xl font-black text-slate-950">
+                      <p className="mt-1 text-xl font-black text-slate-950 sm:mt-2 sm:text-2xl">
                         {cargandoMetricas
                           ? "..."
                           : `S/ ${(metricas?.ticketPromedio ?? 0).toFixed(2)}`}
@@ -1302,12 +1302,12 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-violet-50 p-4">
+                    <div className="rounded-2xl bg-violet-50 p-3 sm:p-4">
                       <p className="text-xs font-black uppercase tracking-wider text-violet-700">
                         Mesas atendidas
                       </p>
 
-                      <p className="mt-2 text-2xl font-black text-slate-950">
+                      <p className="mt-1 text-xl font-black text-slate-950 sm:mt-2 sm:text-2xl">
                         {cargandoMetricas
                           ? "..."
                           : metricas?.mesasAtendidas ?? 0}
@@ -1336,7 +1336,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    <div className="mt-5 flex h-56 items-end gap-1 overflow-x-auto rounded-2xl bg-slate-50 p-4">
+                    <div className="mt-4 flex h-44 items-end gap-1 overflow-x-auto rounded-2xl bg-slate-50 p-3 sm:mt-5 sm:h-56 sm:p-4">
                       {(metricas?.ventasPorHora ?? []).map(
                         (punto) => {
                           const maximo =
@@ -1397,8 +1397,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+                  <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
                     <div className="flex items-center gap-3">
                       <div className="rounded-2xl bg-amber-100 p-3 text-amber-700">
                         <Trophy
@@ -1417,7 +1417,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="mt-5 space-y-3">
+                    <div className="mt-4 grid grid-cols-1 gap-2.5 sm:mt-5 sm:space-y-0">
                       {(metricas?.topProductos ?? []).length === 0 ? (
                         <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm font-bold text-slate-500">
                           Aún no hay ventas pagadas hoy.
@@ -1460,7 +1460,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
                     <div className="flex items-center gap-3">
                       <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700">
                         <WalletCards
@@ -1539,7 +1539,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
                 <p className="text-sm font-black uppercase tracking-wider text-amber-600">
                   Acceso rápido
                 </p>
@@ -1602,40 +1602,23 @@ export default function DashboardPage() {
       </div>
     
       {/* =====================================================
-          NAVEGACIÓN MÓVIL
-          Solo aparece debajo de lg.
+          NAVEGACIÓN MÓVIL COMPACTA
          ===================================================== */}
       <nav className="fixed bottom-0 left-0 right-0 z-[80] border-t border-slate-200 bg-white/95 px-2 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_rgba(15,23,42,0.10)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
-          <Link
-            href="/dashboard"
-            className="flex flex-col items-center justify-center rounded-2xl bg-slate-950 px-2 py-2 text-[10px] font-black text-white"
-          >
+          <Link href="/dashboard" className="flex flex-col items-center justify-center rounded-2xl bg-slate-950 px-2 py-2 text-[10px] font-black text-white">
             <LayoutDashboard size={20} />
             Inicio
           </Link>
-
-          <Link
-            href="/dashboard/mesas"
-            className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600"
-          >
+          <Link href="/dashboard/mesas" className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600">
             <UtensilsCrossed size={20} />
             Mesas
           </Link>
-
-          <Link
-            href="/dashboard/pedidos"
-            className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600"
-          >
+          <Link href="/dashboard/pedidos" className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600">
             <ReceiptText size={20} />
             Pedidos
           </Link>
-
-          <button
-            type="button"
-            onClick={() => setMenuMovilAbierto(true)}
-            className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600"
-          >
+          <button type="button" onClick={() => setMenuMovilAbierto(true)} className="flex flex-col items-center justify-center rounded-2xl px-2 py-2 text-[10px] font-black text-slate-600">
             <Menu size={20} />
             Más
           </button>
@@ -1644,209 +1627,63 @@ export default function DashboardPage() {
 
       {menuMovilAbierto && (
         <div className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm lg:hidden">
-          <button
-            type="button"
-            aria-label="Cerrar menú"
-            onClick={() => setMenuMovilAbierto(false)}
-            className="absolute inset-0"
-          />
-
-          <section className="absolute bottom-0 left-0 right-0 max-h-[90vh] overflow-y-auto rounded-t-[34px] bg-white p-4 shadow-2xl">
+          <button type="button" aria-label="Cerrar menú" onClick={() => setMenuMovilAbierto(false)} className="absolute inset-0" />
+          <section className="absolute bottom-0 left-0 right-0 max-h-[88vh] overflow-y-auto rounded-t-[34px] bg-white p-4 shadow-2xl">
             <div className="mx-auto max-w-lg">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-amber-400">
-                    <UtensilsCrossed size={22} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">
-                      Chinka Chinka
-                    </p>
-
-                    <h3 className="truncate text-lg font-black text-slate-950">
-                      {sesion
-                        ? `${sesion.nombres} ${sesion.apellidos}`
-                        : "Menú principal"}
-                    </h3>
-
-                    <p className="text-xs font-bold text-slate-500">
-                      {sesion?.rol ?? ""}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-600">Chinka Chinka</p>
+                  <h3 className="mt-1 text-xl font-black text-slate-950">Menú rápido</h3>
+                  <p className="mt-0.5 text-xs font-bold text-slate-500">{sesion?.nombres ?? ""} · {sesion?.rol ?? ""}</p>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-xl bg-slate-100 p-2.5 text-slate-700"
-                >
+                <button type="button" onClick={() => setMenuMovilAbierto(false)} className="rounded-xl bg-slate-100 p-2.5">
                   <X size={20} />
                 </button>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Link
-                  href="/dashboard/mozo"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-amber-200 bg-amber-50 p-4 active:scale-[0.98]"
-                >
-                  <Users size={23} className="text-amber-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Modo Mozo
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Atención rápida
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/cocina"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-orange-200 bg-orange-50 p-4 active:scale-[0.98]"
-                >
-                  <ChefHat size={23} className="text-orange-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Cocina
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Preparación
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/entregas"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-violet-200 bg-violet-50 p-4 active:scale-[0.98]"
-                >
-                  <ShoppingBag size={23} className="text-violet-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Entregas
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Pedidos listos
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/caja"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 active:scale-[0.98]"
-                >
-                  <CircleDollarSign size={23} className="text-emerald-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Caja
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Cobros y cuentas
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/productos"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
-                >
-                  <ShoppingBasket size={23} className="text-slate-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Productos
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Carta e inventario
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/categorias"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
-                >
-                  <FolderTree size={23} className="text-slate-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Categorías
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Organización
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/comprobantes"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
-                >
-                  <WalletCards size={23} className="text-slate-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Comprobantes
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Boletas y facturas
-                  </p>
-                </Link>
-
-                <Link
-                  href="/dashboard/pedidos"
-                  onClick={() => setMenuMovilAbierto(false)}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4 active:scale-[0.98]"
-                >
-                  <ReceiptText size={23} className="text-slate-700" />
-                  <p className="mt-3 font-black text-slate-950">
-                    Pedidos
-                  </p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Seguimiento
-                  </p>
-                </Link>
+                {[
+                  { href: "/dashboard/mozo", label: "Modo Mozo", sub: "Atención rápida", icon: <Users size={22} />, cls: "border-amber-200 bg-amber-50 text-amber-800" },
+                  { href: "/dashboard/cocina", label: "Cocina", sub: "Preparación", icon: <ChefHat size={22} />, cls: "border-orange-200 bg-orange-50 text-orange-800" },
+                  { href: "/dashboard/entregas", label: "Entregas", sub: "Pedidos listos", icon: <ShoppingBag size={22} />, cls: "border-violet-200 bg-violet-50 text-violet-800" },
+                  { href: "/dashboard/caja", label: "Caja", sub: "Cobros", icon: <CircleDollarSign size={22} />, cls: "border-emerald-200 bg-emerald-50 text-emerald-800" },
+                  { href: "/dashboard/productos", label: "Productos", sub: "Carta y stock", icon: <ShoppingBasket size={22} />, cls: "border-slate-200 bg-slate-50 text-slate-800" },
+                  { href: "/dashboard/categorias", label: "Categorías", sub: "Organización", icon: <FolderTree size={22} />, cls: "border-slate-200 bg-slate-50 text-slate-800" },
+                  { href: "/dashboard/comprobantes", label: "Comprobantes", sub: "Boletas y facturas", icon: <WalletCards size={22} />, cls: "border-slate-200 bg-slate-50 text-slate-800" },
+                  { href: "/dashboard/pedidos", label: "Pedidos", sub: "Seguimiento", icon: <ReceiptText size={22} />, cls: "border-slate-200 bg-slate-50 text-slate-800" },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMenuMovilAbierto(false)}
+                    className={`rounded-2xl border p-4 active:scale-[0.98] ${item.cls}`}
+                  >
+                    {item.icon}
+                    <p className="mt-3 font-black text-slate-950">{item.label}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">{item.sub}</p>
+                  </Link>
+                ))}
               </div>
 
               {puedeAdministrar && (
                 <div className="mt-5">
-                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-                    Administración
-                  </p>
-
+                  <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Administración</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <Link
-                      href="/dashboard/configuracion/usuarios"
-                      onClick={() => setMenuMovilAbierto(false)}
-                      className="rounded-2xl border border-blue-200 bg-blue-50 p-4 active:scale-[0.98]"
-                    >
-                      <UserCog size={23} className="text-blue-700" />
-                      <p className="mt-3 font-black text-slate-950">
-                        Usuarios
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        Roles y accesos
-                      </p>
+                    <Link href="/dashboard/configuracion/usuarios" onClick={() => setMenuMovilAbierto(false)} className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                      <UserCog size={22} className="text-blue-700" />
+                      <p className="mt-3 font-black">Usuarios</p>
                     </Link>
-
-                    <Link
-                      href="/dashboard/configuracion"
-                      onClick={() => setMenuMovilAbierto(false)}
-                      className="rounded-2xl border border-blue-200 bg-blue-50 p-4 active:scale-[0.98]"
-                    >
-                      <Settings size={23} className="text-blue-700" />
-                      <p className="mt-3 font-black text-slate-950">
-                        Configuración
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        Sistema
-                      </p>
+                    <Link href="/dashboard/configuracion" onClick={() => setMenuMovilAbierto(false)} className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                      <Settings size={22} className="text-blue-700" />
+                      <p className="mt-3 font-black">Configuración</p>
                     </Link>
                   </div>
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={cerrarSesion}
-                disabled={cerrandoSesion}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-4 font-black text-red-700 disabled:opacity-50"
-              >
+              <button type="button" onClick={cerrarSesion} disabled={cerrandoSesion} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-4 font-black text-red-700 disabled:opacity-50">
                 <LogOut size={19} />
-                {cerrandoSesion
-                  ? "Cerrando..."
-                  : "Cerrar sesión"}
+                {cerrandoSesion ? "Cerrando..." : "Cerrar sesión"}
               </button>
             </div>
           </section>
