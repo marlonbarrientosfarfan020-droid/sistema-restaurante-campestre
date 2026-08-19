@@ -7,7 +7,9 @@ import {
   ChefHat,
   ChevronRight,
   CircleDollarSign,
+  ExternalLink,
   FolderTree,
+  Globe,
   Home,
   LogOut,
   Menu,
@@ -303,6 +305,23 @@ export default function DashboardRoleNavigation({
               {sesion.correo}
             </p>
           </div>
+
+          {/* Acceso Directo a la Web Pública y Carta Digital */}
+          <div className="mt-3">
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 hover:border-amber-400 active:scale-95 shadow-sm"
+              title="Abrir carta digital y web pública en nueva pestaña"
+            >
+              <div className="flex items-center gap-2">
+                <Globe size={16} className="text-amber-400" />
+                <span>Ver Carta Pública / Web</span>
+              </div>
+              <ExternalLink size={13} className="text-amber-400/80" />
+            </Link>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-5">
@@ -495,19 +514,32 @@ export default function DashboardRoleNavigation({
             </div>
           </Link>
 
-          <button
-            type="button"
-            onClick={() =>
-              setMenuMovilAbierto(
-                true
-              )
-            }
-            className="rounded-xl bg-slate-100 p-2.5 text-slate-700"
-          >
-            <Menu
-              size={22}
-            />
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-500/20 transition active:scale-95"
+              title="Ver Carta Pública / Web"
+            >
+              <Globe size={15} className="text-amber-600" />
+              <span className="hidden xs:inline">Ver Web</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() =>
+                setMenuMovilAbierto(
+                  true
+                )
+              }
+              className="rounded-xl bg-slate-100 p-2.5 text-slate-700"
+            >
+              <Menu
+                size={22}
+              />
+            </button>
+          </div>
         </header>
 
         <div className="pb-24 lg:pb-0">
@@ -619,6 +651,23 @@ export default function DashboardRoleNavigation({
                     size={20}
                   />
                 </button>
+              </div>
+
+              {/* Acceso a Carta Pública en Drawer Móvil */}
+              <div className="mt-3">
+                <Link
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuMovilAbierto(false)}
+                  className="flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs font-black text-amber-800 transition active:scale-95"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Globe size={18} className="text-amber-600" />
+                    <span>Ver Carta Pública / Web</span>
+                  </div>
+                  <ExternalLink size={15} className="text-amber-600" />
+                </Link>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">

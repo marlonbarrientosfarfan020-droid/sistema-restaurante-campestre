@@ -8,8 +8,9 @@ import {
   Mail,
   MapPin,
   Heart,
-  LogIn,
+  Lock,
   UtensilsCrossed,
+  Clock,
 } from "lucide-react";
 
 interface FooterLuxuryProps {
@@ -126,35 +127,46 @@ export function FooterLuxury({
             </ul>
           </div>
 
-          {/* Columna 4: Acceso Personal & Sistema */}
-          <div className="space-y-4">
-            <h5 className="font-serif text-base font-black text-white uppercase tracking-wider">
-              Área de Personal
+          {/* Columna 4: Horarios y Ambiente */}
+          <div className="space-y-3">
+            <h5 className="font-serif text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+              <Clock size={16} className="text-amber-400" />
+              <span>Horarios de Atención</span>
             </h5>
-            <p className="text-xs text-stone-400 font-light leading-relaxed">
-              Módulos de Mozo, Cocina, Caja y Administración del Restaurante.
+            <p className="text-xs text-stone-300 leading-relaxed">
+              <strong className="text-white">Martes a Viernes:</strong> 11:30 AM – 5:30 PM
             </p>
-
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-2xl border border-stone-800 bg-stone-900/90 hover:bg-stone-800 hover:border-amber-500/50 px-4 py-3 text-xs font-bold text-stone-200 transition active:scale-95 shadow-md"
-            >
-              <LogIn size={15} className="text-amber-400" />
-              <span>Ingresar al Sistema POS</span>
-            </Link>
+            <p className="text-xs text-stone-300 leading-relaxed">
+              <strong className="text-amber-400">Sábados, Domingos y Feriados:</strong> 10:30 AM – 6:30 PM
+            </p>
+            <p className="text-xs text-stone-500 italic">
+              Lunes cerrado por mantenimiento de jardines.
+            </p>
           </div>
         </div>
 
-        {/* Barra Inferior de Copyright */}
+        {/* Barra Inferior de Copyright y Acceso Discreto */}
         <div className="pt-8 border-t border-stone-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
           <p>
             © {currentYear} {empresaNombre}. Todos los derechos reservados.
           </p>
 
-          <p className="flex items-center gap-1.5">
-            <span>Diseñado con pasión por la gastronomía peruana</span>
-            <Heart size={13} className="text-amber-400 fill-amber-400 inline" />
-          </p>
+          <div className="flex items-center gap-6">
+            <p className="flex items-center gap-1.5">
+              <span>Sabor campestre peruano</span>
+              <Heart size={13} className="text-amber-400 fill-amber-400 inline" />
+            </p>
+
+            {/* Enlace sutil y minimalista para el personal */}
+            <Link
+              href="/login"
+              className="text-stone-500 hover:text-amber-400 text-xs transition-colors py-1 inline-flex items-center gap-1.5"
+              title="Acceso exclusivo para el personal"
+            >
+              <Lock size={13} className="text-stone-500 hover:text-amber-400" />
+              <span>🔒 Acceso Personal / Staff</span>
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

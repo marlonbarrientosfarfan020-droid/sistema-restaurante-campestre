@@ -6,12 +6,11 @@ import Image from "next/image";
 import {
   Menu,
   X,
-  Phone,
+  MapPin,
   UtensilsCrossed,
   Sparkles,
-  MapPin,
-  Clock,
-  LogIn,
+  Calendar,
+  Compass,
 } from "lucide-react";
 
 interface NavbarCampestreProps {
@@ -35,7 +34,7 @@ export function NavbarCampestre({
   }, []);
 
   const whatsappMessage = encodeURIComponent(
-    "¡Hola Restaurante Campestre Chinka Chinka! Deseo información sobre la carta y realizar una reserva."
+    "¡Hola Restaurante Campestre Chinka Chinka! Deseo información sobre la carta y realizar una reserva de mesa."
   );
   const whatsappUrl = `https://wa.me/51987654321?text=${whatsappMessage}`;
 
@@ -50,7 +49,7 @@ export function NavbarCampestre({
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4">
-            {/* Logo y Marca */}
+            {/* Logo y Marca Oficial */}
             <Link
               href="#inicio"
               className="flex items-center gap-3 group transition-transform duration-200 active:scale-95"
@@ -78,7 +77,7 @@ export function NavbarCampestre({
               </div>
             </Link>
 
-            {/* Enlaces de Navegación (Desktop) */}
+            {/* Enlaces de Navegación (Desktop con Scroll Suave) */}
             <nav className="hidden lg:flex items-center gap-8">
               <Link
                 href="#inicio"
@@ -91,7 +90,7 @@ export function NavbarCampestre({
                 className="text-sm font-bold text-stone-300 hover:text-amber-400 transition duration-200 flex items-center gap-1.5"
               >
                 <UtensilsCrossed size={15} className="text-amber-400" />
-                Nuestra Carta
+                <span>Nuestra Carta</span>
               </Link>
               <Link
                 href="#experiencia"
@@ -104,28 +103,29 @@ export function NavbarCampestre({
                 className="text-sm font-bold text-stone-300 hover:text-amber-400 transition duration-200 flex items-center gap-1.5"
               >
                 <MapPin size={15} className="text-amber-400" />
-                Ubicación
+                <span>Ubicación</span>
               </Link>
             </nav>
 
-            {/* Acciones CTA */}
+            {/* Acciones para Clientes (Laptop / Desktop) */}
             <div className="hidden sm:flex items-center gap-3">
+              {/* Botón Secundario: Cómo Llegar */}
               <Link
-                href="/login"
-                className="flex items-center gap-1.5 rounded-2xl border border-stone-700 bg-stone-900/80 px-3.5 py-2.5 text-xs font-bold text-stone-300 hover:border-amber-500/40 hover:text-white transition active:scale-95"
-                title="Acceso Personal / Sistema POS"
+                href="#ubicacion"
+                className="flex items-center gap-1.5 rounded-2xl border border-amber-500/40 bg-stone-900/80 px-4 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-500/10 hover:border-amber-400 hover:text-white transition active:scale-95 shadow-sm"
               >
-                <LogIn size={14} className="text-amber-400" />
-                <span>Acceso POS</span>
+                <MapPin size={15} className="text-amber-400" />
+                <span>Cómo Llegar</span>
               </Link>
 
+              {/* Botón Principal: Reservar Mesa */}
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-4 py-2.5 text-xs font-black text-stone-950 shadow-lg shadow-amber-500/20 transition active:scale-95"
+                className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 px-5 py-2.5 text-xs font-black text-stone-950 shadow-lg shadow-amber-500/20 transition active:scale-95"
               >
-                <Phone size={14} className="text-stone-950 fill-stone-950" />
+                <Calendar size={15} className="text-stone-950" />
                 <span>Reservar Mesa</span>
               </a>
             </div>
@@ -134,7 +134,7 @@ export function NavbarCampestre({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden flex h-11 w-11 items-center justify-center rounded-2xl border border-stone-800 bg-stone-900 text-stone-300 hover:text-white hover:border-amber-500/40 transition"
+              className="lg:hidden flex h-11 w-11 items-center justify-center rounded-2xl border border-stone-800 bg-stone-900 text-stone-300 hover:text-white hover:border-amber-500/40 transition active:scale-95"
               aria-label="Abrir menú"
             >
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -143,23 +143,23 @@ export function NavbarCampestre({
         </div>
       </header>
 
-      {/* Menú Desplegable Móvil */}
+      {/* Menú Desplegable Móvil Táctil */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          <div className="fixed top-20 left-4 right-4 rounded-3xl border border-amber-500/30 bg-stone-950/95 p-6 text-white shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-4 duration-300">
-            <nav className="flex flex-col gap-4">
+          <div className="fixed top-20 left-4 right-4 rounded-3xl border border-amber-500/30 bg-stone-950/95 p-6 text-white shadow-2xl backdrop-blur-xl animate-in slide-in-from-top-4 duration-300 max-h-[85vh] overflow-y-auto">
+            <nav className="flex flex-col gap-3">
               <Link
                 href="#inicio"
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between rounded-2xl bg-stone-900/60 p-4 text-base font-black hover:bg-amber-500/10 hover:text-amber-400 transition"
               >
                 <span>Inicio</span>
-                <span className="text-xs text-amber-400">01</span>
+                <span className="text-xs text-amber-400 font-serif">01</span>
               </Link>
 
               <Link
@@ -167,11 +167,11 @@ export function NavbarCampestre({
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between rounded-2xl bg-stone-900/60 p-4 text-base font-black hover:bg-amber-500/10 hover:text-amber-400 transition"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2.5">
                   <UtensilsCrossed size={18} className="text-amber-400" />
                   Nuestra Carta Digital
                 </span>
-                <span className="text-xs text-amber-400">02</span>
+                <span className="text-xs text-amber-400 font-serif">02</span>
               </Link>
 
               <Link
@@ -180,7 +180,7 @@ export function NavbarCampestre({
                 className="flex items-center justify-between rounded-2xl bg-stone-900/60 p-4 text-base font-black hover:bg-amber-500/10 hover:text-amber-400 transition"
               >
                 <span>Experiencia Campestre</span>
-                <span className="text-xs text-amber-400">03</span>
+                <span className="text-xs text-amber-400 font-serif">03</span>
               </Link>
 
               <Link
@@ -188,31 +188,33 @@ export function NavbarCampestre({
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-between rounded-2xl bg-stone-900/60 p-4 text-base font-black hover:bg-amber-500/10 hover:text-amber-400 transition"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2.5">
                   <MapPin size={18} className="text-amber-400" />
                   Ubicación y Horarios
                 </span>
-                <span className="text-xs text-amber-400">04</span>
+                <span className="text-xs text-amber-400 font-serif">04</span>
               </Link>
 
-              <div className="pt-2 border-t border-stone-800 flex flex-col gap-2.5">
+              {/* Botones de Acción para Móvil */}
+              <div className="pt-3 border-t border-stone-800/80 flex flex-col gap-2.5 mt-2">
                 <a
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 p-4 text-sm font-black text-stone-950 shadow-lg shadow-amber-500/20"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 p-4 text-sm font-black text-stone-950 shadow-lg shadow-amber-500/20 active:scale-95 transition"
                 >
-                  <Phone size={16} />
-                  <span>Reservar por WhatsApp</span>
+                  <Calendar size={18} className="text-stone-950" />
+                  <span>Reservar Mesa por WhatsApp</span>
                 </a>
 
                 <Link
-                  href="/login"
+                  href="#ubicacion"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 rounded-2xl border border-stone-700 bg-stone-900 p-3.5 text-xs font-bold text-stone-300"
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-amber-500/40 bg-stone-900/90 p-3.5 text-xs font-bold text-amber-300 active:scale-95 transition"
                 >
-                  <LogIn size={15} className="text-amber-400" />
-                  <span>Acceso Sistema POS</span>
+                  <Compass size={16} className="text-amber-400" />
+                  <span>📍 Cómo Llegar al Restaurante</span>
                 </Link>
               </div>
             </nav>
