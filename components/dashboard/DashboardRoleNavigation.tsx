@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
+  Check,
   ChefHat,
   ChevronRight,
   CircleDollarSign,
+  Copy,
   ExternalLink,
   FolderTree,
   Globe,
@@ -17,6 +19,7 @@ import {
   Printer,
   ReceiptText,
   Settings,
+  Share2,
   ShoppingBasket,
   UserCog,
   Users,
@@ -24,6 +27,8 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
+
+import { toast } from "sonner";
 
 import {
   useEffect,
@@ -219,6 +224,24 @@ export default function DashboardRoleNavigation({
   ] =
     useState(false);
 
+  const [copiado, setCopiado] = useState(false);
+
+  async function copiarLinkCarta(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const url = `${window.location.origin}/carta`;
+      await navigator.clipboard.writeText(url);
+      setCopiado(true);
+      toast.success("¡Enlace de la carta copiado para compartir!", {
+        description: url,
+      });
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {
+      toast.error("No se pudo copiar el enlace.");
+    }
+  }
+
   const admin =
     esAdministrador(
       sesion.rol
@@ -306,21 +329,35 @@ export default function DashboardRoleNavigation({
             </p>
           </div>
 
-          {/* Acceso Directo a la Web Pública y Carta Digital */}
-          <div className="mt-3">
+          {/* Acceso y Compartición de la Carta Pública */}
+          <div className="mt-3 flex items-center gap-1.5">
             <Link
-              href="/"
+              href="/carta"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 hover:border-amber-400 active:scale-95 shadow-sm"
-              title="Abrir carta digital y web pública en nueva pestaña"
+              className="flex-1 flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 hover:border-amber-400 active:scale-95 shadow-sm"
+              title="Abrir carta digital pública en nueva pestaña"
             >
               <div className="flex items-center gap-2">
-                <Globe size={16} className="text-amber-400" />
-                <span>Ver Carta Pública / Web</span>
+                <Globe size={16} className="text-amber-400 shrink-0" />
+                <span className="truncate">Ver Carta Pública</span>
               </div>
-              <ExternalLink size={13} className="text-amber-400/80" />
+              <ExternalLink size={13} className="text-amber-400/80 shrink-0" />
             </Link>
+
+            <button
+              type="button"
+              onClick={copiarLinkCarta}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400 transition active:scale-90 shadow-sm shrink-0"
+              title="Copiar enlace directo de la carta para compartir"
+              aria-label="Copiar link de la carta"
+            >
+              {copiado ? (
+                <Check size={16} className="text-emerald-400" />
+              ) : (
+                <Copy size={16} className="text-amber-400" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -514,17 +551,26 @@ export default function DashboardRoleNavigation({
             </div>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Link
-              href="/"
+              href="/carta"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-500/20 transition active:scale-95"
-              title="Ver Carta Pública / Web"
+              className="flex items-center gap-1 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-xs font-black text-amber-700 hover:bg-amber-500/20 transition active:scale-95"
+              title="Ver Carta Pública"
             >
-              <Globe size={15} className="text-amber-600" />
-              <span className="hidden xs:inline">Ver Web</span>
+              <Globe size={14} className="text-amber-600" />
+              <span className="hidden xs:inline">Carta</span>
             </Link>
+
+            <button
+              type="button"
+              onClick={copiarLinkCarta}
+              className="flex items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 p-2 text-amber-700 hover:bg-amber-500/20 transition active:scale-95"
+              title="Copiar enlace de la carta"
+            >
+              {copiado ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            </button>
 
             <button
               type="button"
@@ -654,20 +700,29 @@ export default function DashboardRoleNavigation({
               </div>
 
               {/* Acceso a Carta Pública en Drawer Móvil */}
-              <div className="mt-3">
+              <div className="mt-3 flex items-center gap-2">
                 <Link
-                  href="/"
+                  href="/carta"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setMenuMovilAbierto(false)}
-                  className="flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs font-black text-amber-800 transition active:scale-95"
+                  className="flex-1 flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs font-black text-amber-800 transition active:scale-95"
                 >
                   <div className="flex items-center gap-2.5">
                     <Globe size={18} className="text-amber-600" />
-                    <span>Ver Carta Pública / Web</span>
+                    <span>Ver Carta Pública</span>
                   </div>
                   <ExternalLink size={15} className="text-amber-600" />
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={copiarLinkCarta}
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 transition active:scale-95 shrink-0"
+                  title="Copiar link de la carta"
+                >
+                  {copiado ? <Check size={18} className="text-emerald-600" /> : <Copy size={18} />}
+                </button>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">

@@ -74,9 +74,10 @@ export async function proxy(
         )
       : null;
 
+  // Ruta raíz (/) o Login (/login): Si ya tiene sesión, redirigir al panel correspondiente
   if (
-    pathname ===
-    "/login"
+    pathname === "/" ||
+    pathname === "/login"
   ) {
     if (sesion) {
       return NextResponse.redirect(
@@ -92,6 +93,7 @@ export async function proxy(
     return NextResponse.next();
   }
 
+  // Rutas protegidas del Dashboard (/dashboard/*)
   if (
     pathname.startsWith(
       "/dashboard"
@@ -100,7 +102,7 @@ export async function proxy(
     if (!sesion) {
       const url =
         new URL(
-          "/login",
+          "/",
           request.url
         );
 
@@ -136,6 +138,7 @@ export async function proxy(
 
 export const config = {
   matcher: [
+    "/",
     "/login",
     "/dashboard/:path*",
   ],
