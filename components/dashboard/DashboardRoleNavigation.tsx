@@ -335,14 +335,19 @@ export default function DashboardRoleNavigation({
               href="/carta"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 hover:border-amber-400 active:scale-95 shadow-sm"
+              className="flex-1 flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-slate-900 px-3.5 py-2.5 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 hover:border-amber-400 active:scale-95 shadow-sm"
               title="Abrir carta digital pública en nueva pestaña"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <Globe size={16} className="text-amber-400 shrink-0" />
                 <span className="truncate">Ver Carta Pública</span>
               </div>
-              <ExternalLink size={13} className="text-amber-400/80 shrink-0" />
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-300 tracking-wider">
+                  Web
+                </span>
+                <ExternalLink size={13} className="text-amber-400/80" />
+              </div>
             </Link>
 
             <button

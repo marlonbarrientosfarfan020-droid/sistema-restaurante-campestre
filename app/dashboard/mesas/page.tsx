@@ -11,11 +11,15 @@ import {
   AlertCircle,
   Bell,
   ShoppingBag,
+  Check,
   CheckCircle2,
   ChefHat,
   CircleDollarSign,
   Clock3,
+  Copy,
+  ExternalLink,
   FolderTree,
+  Globe,
   LayoutDashboard,
   LoaderCircle,
   LogOut,
@@ -30,6 +34,7 @@ import {
   UtensilsCrossed,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import AbrirAtencionForm from "@/components/mesas/AbrirAtencionForm";
 import AgregarPedidoForm from "@/components/pedidos/AgregarPedidoForm";
@@ -252,6 +257,26 @@ export default function MesasPage() {
     cerrandoSesion,
     setCerrandoSesion,
   ] = useState(false);
+
+  const [copiado, setCopiado] = useState(false);
+
+  async function copiarLinkCarta(e?: React.MouseEvent) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      const url = `${window.location.origin}/carta`;
+      await navigator.clipboard.writeText(url);
+      setCopiado(true);
+      toast.success("¡Enlace de la carta copiado para compartir!", {
+        description: url,
+      });
+      setTimeout(() => setCopiado(false), 2500);
+    } catch {
+      toast.error("No se pudo copiar el enlace.");
+    }
+  }
 
   const [
     mesaSeleccionada,
@@ -620,6 +645,42 @@ export default function MesasPage() {
                 {sesion.correo}
               </p>
             )}
+          </div>
+
+          {/* Acceso y Compartición de la Carta Pública */}
+          <div className="mb-4 flex items-center gap-1.5">
+            <Link
+              href="/carta"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-between gap-2 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-slate-900 px-3.5 py-2.5 text-xs font-black text-amber-300 transition hover:bg-amber-500/20 hover:border-amber-400 active:scale-95 shadow-sm"
+              title="Abrir carta digital pública en nueva pestaña"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Globe size={16} className="text-amber-400 shrink-0" />
+                <span className="truncate">Ver Carta Pública</span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-300 tracking-wider">
+                  Web
+                </span>
+                <ExternalLink size={13} className="text-amber-400/80" />
+              </div>
+            </Link>
+
+            <button
+              type="button"
+              onClick={copiarLinkCarta}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/25 hover:border-amber-400 transition active:scale-90 shadow-sm shrink-0"
+              title="Copiar enlace directo de la carta para compartir"
+              aria-label="Copiar link de la carta"
+            >
+              {copiado ? (
+                <Check size={16} className="text-emerald-400" />
+              ) : (
+                <Copy size={16} className="text-amber-400" />
+              )}
+            </button>
           </div>
 
           <nav className="space-y-2">
