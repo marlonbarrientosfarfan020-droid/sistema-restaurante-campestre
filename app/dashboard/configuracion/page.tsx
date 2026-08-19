@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import {
   ArrowLeft,
+  Printer,
   Settings,
   ShieldCheck,
   UserCog,
@@ -40,10 +41,31 @@ export default function ConfiguracionPage() {
 
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <Link
-            href="/dashboard/configuracion/usuarios"
+            href="/dashboard/configuracion/impresoras"
             className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
           >
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+              <Printer size={28} />
+            </div>
+
+            <h2 className="mt-5 text-2xl font-black text-slate-950">
+              Impresoras térmicas
+            </h2>
+
+            <p className="mt-2 text-slate-500">
+              Configura las impresoras de red (Cocina y Caja/Recepción), IP, puerto 9100 y modo de impresión dual.
+            </p>
+
+            <div className="mt-5 font-black text-amber-700 transition group-hover:translate-x-1">
+              Configurar impresoras →
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/configuracion/usuarios"
+            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
               <UserCog size={28} />
             </div>
 
@@ -55,7 +77,7 @@ export default function ConfiguracionPage() {
               Crea usuarios, asigna roles, activa o desactiva accesos y administra al personal.
             </p>
 
-            <div className="mt-5 font-black text-amber-700 transition group-hover:translate-x-1">
+            <div className="mt-5 font-black text-sky-700 transition group-hover:translate-x-1">
               Administrar usuarios →
             </div>
           </Link>

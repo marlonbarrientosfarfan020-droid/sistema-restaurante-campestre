@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 
 import { useCocina } from "@/hooks/useCocina";
+import { usePrinter } from "@/hooks/usePrinter";
+import { ThermalReceiptModal } from "@/components/impresion/ThermalReceiptModal";
 
 import type {
   PedidoResumen,
@@ -431,16 +433,20 @@ function imprimirPedidoCocina(
 function PedidoCocinaCard({
   pedido,
   procesando,
+  imprimiendo = false,
   onCambiarEstado,
+  onImprimirPedido,
 }: {
   pedido: PedidoResumen;
   procesando: boolean;
+  imprimiendo?: boolean;
   onCambiarEstado: (
     pedidoId: string,
     estado:
       | "PREPARANDO"
       | "LISTO"
   ) => Promise<boolean>;
+  onImprimirPedido?: (pedidoId: string) => Promise<void | unknown>;
 }) {
   const minutos =
     calcularMinutos(
@@ -602,18 +608,22 @@ function PedidoCocinaCard({
 
         <button
           type="button"
-          onClick={() =>
-            imprimirPedidoCocina(
-              pedido
-            )
-          }
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-300 bg-white px-5 py-4 font-black text-slate-800 transition hover:border-slate-950 hover:bg-slate-50"
+          disabled={imprimiendo}
+          onClick={() => {
+            if (onImprimirPedido) {
+              onImprimirPedido(pedido.id);
+            } else {
+              imprimirPedidoCocina(pedido);
+            }
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-slate-300 bg-white px-5 py-4 font-black text-slate-800 transition hover:border-slate-950 hover:bg-slate-50 disabled:opacity-60"
         >
-          <Printer
-            size={19}
-          />
-
-          Imprimir cocina
+          {imprimiendo ? (
+            <LoaderCircle size={19} className="animate-spin text-amber-600" />
+          ) : (
+            <Printer size={19} />
+          )}
+          Imprimir comanda
         </button>
 
         {accion ? (
@@ -670,6 +680,14 @@ export default function CocinaPage() {
     recargar,
     cambiarEstado,
   } = useCocina();
+
+  const {
+    imprimiendo,
+    imprimirComandaCocina,
+    modalAbierto,
+    cerrarModal,
+    ultimoResultado,
+  } = usePrinter();
 
   const recibidos =
     pedidos.filter(
@@ -918,8 +936,12 @@ export default function CocinaPage() {
                           procesandoId ===
                           pedido.id
                         }
+                        imprimiendo={imprimiendo}
                         onCambiarEstado={
                           cambiarEstado
+                        }
+                        onImprimirPedido={
+                          imprimirComandaCocina
                         }
                       />
                     )
@@ -967,8 +989,12 @@ export default function CocinaPage() {
                           procesandoId ===
                           pedido.id
                         }
+                        imprimiendo={imprimiendo}
                         onCambiarEstado={
                           cambiarEstado
+                        }
+                        onImprimirPedido={
+                          imprimirComandaCocina
                         }
                       />
                     )
@@ -979,6 +1005,16 @@ export default function CocinaPage() {
           </section>
         )}
       </div>
+
+      <ThermalReceiptModal
+        isOpen={modalAbierto}
+        onClose={cerrarModal}
+        ticketHtml={ultimoResultado?.ticketHtml || ""}
+        titulo={ultimoResultado?.titulo || "Comanda de Cocina"}
+        paperWidth={ultimoResultado?.paperWidth || "80mm"}
+        networkPrinted={ultimoResultado?.networkPrinted}
+        networkError={ultimoResultado?.error}
+      />
     </main>
   );
 }

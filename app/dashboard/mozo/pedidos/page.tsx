@@ -362,13 +362,13 @@ export default function PedidosMozoPage() {
 
             <div className="flex gap-3">
               <Link
-                href="/dashboard"
-                className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-black text-white"
+                href="/dashboard/mozo"
+                className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 active:scale-95"
               >
                 <ArrowLeft
                   size={19}
                 />
-                Volver
+                Mis Mesas
               </Link>
 
               <button

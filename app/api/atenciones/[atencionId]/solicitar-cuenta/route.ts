@@ -21,7 +21,7 @@ type ContextoRuta = {
 };
 
 export async function PATCH(
-  _request: Request,
+  request: Request,
   contexto: ContextoRuta
 ) {
   try {
@@ -42,6 +42,16 @@ export async function PATCH(
         }
       );
     }
+
+    const body = await request.json().catch(() => ({}));
+    const metodoPagoPrevisto =
+      typeof body?.metodoPagoPrevisto === "string"
+        ? body.metodoPagoPrevisto.trim()
+        : null;
+    const observacion =
+      typeof body?.observacion === "string"
+        ? body.observacion.trim()
+        : null;
 
     const resultado =
       await prisma.$transaction(
@@ -148,6 +158,14 @@ export async function PATCH(
 
               fechaSolicitudCuenta:
                 ahora,
+
+              ...(metodoPagoPrevisto
+                ? { metodoPagoPrevisto }
+                : {}),
+
+              ...(observacion
+                ? { observacion }
+                : {}),
             },
           });
 

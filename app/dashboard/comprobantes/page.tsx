@@ -23,6 +23,8 @@ import {
   useMemo,
   useState,
 } from "react";
+import { usePrinter } from "@/hooks/usePrinter";
+import { ThermalReceiptModal } from "@/components/impresion/ThermalReceiptModal";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -178,11 +180,16 @@ export default function ComprobantesPage() {
       []
     );
 
-  const [
-    cargando,
-    setCargando,
-  ] =
+  const [cargando, setCargando] =
     useState(true);
+
+  const {
+    imprimiendo,
+    imprimirComprobante,
+    modalAbierto,
+    cerrarModal,
+    ultimoResultado,
+  } = usePrinter();
 
   const [
     error,
@@ -371,177 +378,14 @@ export default function ComprobantesPage() {
     }
   }
 
-  function imprimirNota(
+  async function imprimirNota(
     nota: NotaVentaDetalle
   ) {
-    const pago =
-      nota.atencion.pagos[
-        nota.atencion.pagos.length -
-          1
-      ];
-
-    const filas =
-      nota.atencion.pedidos
-        .flatMap(
-          (pedido) =>
-            pedido.detalles.map(
-              (item) => `
-                <tr>
-                  <td style="padding:5px 0;">
-                    ${Number(
-                      item.cantidad
-                    )} x ${item.producto.nombre}
-                  </td>
-
-                  <td style="padding:5px 0;text-align:right;">
-                    ${dinero(
-                      item.subtotal
-                    )}
-                  </td>
-                </tr>
-              `
-            )
-        )
-        .join("");
-
-    const ventana =
-      window.open(
-        "",
-        "_blank",
-        "width=460,height=760"
-      );
-
-    if (!ventana) {
-      return;
+    try {
+      await imprimirComprobante(nota.id);
+    } catch {
+      // Manejado por usePrinter
     }
-
-    ventana.document.write(`
-      <html>
-        <head>
-          <title>${nota.numero}</title>
-
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 24px;
-              color: #111827;
-            }
-
-            h1, h2, p {
-              margin: 0;
-            }
-
-            .center {
-              text-align: center;
-            }
-
-            .muted {
-              color: #6b7280;
-              font-size: 12px;
-            }
-
-            .line {
-              border-top: 1px dashed #9ca3af;
-              margin: 14px 0;
-            }
-
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              font-size: 13px;
-            }
-
-            .total {
-              display: flex;
-              justify-content: space-between;
-              font-size: 20px;
-              font-weight: 800;
-            }
-          </style>
-        </head>
-
-        <body>
-          <div class="center">
-            <h1>${nota.sucursal.empresa.nombre}</h1>
-            <p>NOTA DE VENTA</p>
-            <h2 style="margin-top:6px;">${nota.numero}</h2>
-
-            ${
-              nota.sucursal.empresa.ruc
-                ? `<p class="muted">RUC: ${nota.sucursal.empresa.ruc}</p>`
-                : ""
-            }
-          </div>
-
-          <div class="line"></div>
-
-          <p><strong>Mesa:</strong> ${nota.atencion.mesa.nombre}</p>
-          <p><strong>Atención:</strong> ${nota.atencion.codigo}</p>
-          <p><strong>Fecha:</strong> ${fechaPeru(
-            nota.fechaEmision
-          )}</p>
-
-          ${
-            nota.clienteNombre
-              ? `<p><strong>Cliente:</strong> ${nota.clienteNombre}</p>`
-              : ""
-          }
-
-          ${
-            nota.clienteDocumento
-              ? `<p><strong>Documento:</strong> ${nota.clienteDocumento}</p>`
-              : ""
-          }
-
-          <div class="line"></div>
-
-          <table>
-            <tbody>
-              ${filas}
-            </tbody>
-          </table>
-
-          <div class="line"></div>
-
-          <div class="total">
-            <span>TOTAL</span>
-            <span>${dinero(
-              nota.total
-            )}</span>
-          </div>
-
-          <div class="line"></div>
-
-          <p><strong>Método:</strong> ${pago?.metodo ?? "--"}</p>
-
-          ${
-            pago?.referencia
-              ? `<p><strong>Referencia:</strong> ${pago.referencia}</p>`
-              : ""
-          }
-
-          <div class="line"></div>
-
-          <p class="center muted">
-            Documento interno de venta
-          </p>
-
-          <p class="center muted" style="margin-top:4px;">
-            Gracias por su visita
-          </p>
-        </body>
-      </html>
-    `);
-
-    ventana.document.close();
-    ventana.focus();
-
-    window.setTimeout(
-      () => {
-        ventana.print();
-      },
-      250
-    );
   }
 
   return (
@@ -1011,17 +855,25 @@ export default function ComprobantesPage() {
 
               <button
                 type="button"
+                disabled={imprimiendo}
                 onClick={() =>
                   imprimirNota(
                     detalle
                   )
                 }
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-4 font-black text-slate-950 transition hover:bg-amber-400"
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-4 font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60"
               >
-                <Printer
-                  size={20}
-                />
-                Imprimir Nota de Venta
+                {imprimiendo ? (
+                  <>
+                    <LoaderCircle size={20} className="animate-spin" />
+                    Imprimiendo...
+                  </>
+                ) : (
+                  <>
+                    <Printer size={20} />
+                    Imprimir Comprobante
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1037,6 +889,16 @@ export default function ComprobantesPage() {
             />
           </div>
         )}
+
+      <ThermalReceiptModal
+        isOpen={modalAbierto}
+        onClose={cerrarModal}
+        ticketHtml={ultimoResultado?.ticketHtml || ""}
+        titulo={ultimoResultado?.titulo || "Comprobante de Venta"}
+        paperWidth={ultimoResultado?.paperWidth || "80mm"}
+        networkPrinted={ultimoResultado?.networkPrinted}
+        networkError={ultimoResultado?.error}
+      />
     </main>
   );
 }

@@ -286,6 +286,21 @@ model Comprobante {
   @@index([fechaEmision])
 }
 
+model PrinterConfig {
+  id         String   @id @default(cuid())
+  target     String   @unique // "KITCHEN" | "RECEPTION"
+  name       String
+  ipAddress  String   @default("192.168.1.200")
+  port       Int      @default(9100)
+  paperWidth String   @default("80mm") // "58mm" | "80mm"
+  isActive   Boolean  @default(true)
+  autoPrint  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([target])
+}
+
 /// *
 ///  * =========================================================
 ///  * ENUMS

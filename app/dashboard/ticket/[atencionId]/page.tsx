@@ -27,7 +27,9 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { usePrinter } from "@/hooks/usePrinter";
+import { ThermalReceiptModal } from "@/components/impresion/ThermalReceiptModal";
 
 type DetalleTicket = {
   id: string;
@@ -207,6 +209,7 @@ function estadoPedidoVisual(
 }
 
 export default function TicketPage() {
+  const router = useRouter();
   const params = useParams<{
     atencionId: string;
   }>();
@@ -232,6 +235,24 @@ export default function TicketPage() {
 
   const [error, setError] =
     useState("");
+
+  const {
+    imprimiendo,
+    imprimirPrecuenta,
+    modalAbierto,
+    cerrarModal,
+    ultimoResultado,
+  } = usePrinter();
+
+  function handleVolver() {
+    if (ticket?.atencion?.mesa?.id) {
+      router.push(`/dashboard/mozo/mesa/${ticket.atencion.mesa.id}`);
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/dashboard/mozo");
+    }
+  }
 
   const cargarTicket =
     useCallback(async () => {
@@ -395,8 +416,13 @@ export default function TicketPage() {
     }
   }
 
-  function imprimirTicket() {
-    window.print();
+  async function imprimirTicket() {
+    if (!atencionId) return;
+    try {
+      await imprimirPrecuenta(atencionId);
+    } catch {
+      // El error ya es manejado por usePrinter
+    }
   }
 
   if (cargando) {
@@ -434,15 +460,16 @@ export default function TicketPage() {
               "La atención no está disponible."}
           </p>
 
-          <Link
-            href="/dashboard"
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 font-black text-white"
+          <button
+            type="button"
+            onClick={handleVolver}
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 font-black text-white transition active:scale-95"
           >
             <ArrowLeft
               size={19}
             />
-            Volver
-          </Link>
+            Volver a la mesa
+          </button>
         </div>
       </main>
     );
@@ -485,15 +512,16 @@ export default function TicketPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20"
+              <button
+                type="button"
+                onClick={handleVolver}
+                className="flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 active:scale-95"
               >
                 <ArrowLeft
                   size={19}
                 />
-                Volver
-              </Link>
+                Volver a la mesa
+              </button>
 
               <button
                 type="button"
@@ -888,10 +916,20 @@ export default function TicketPage() {
             onClick={
               imprimirTicket
             }
-            className="flex items-center justify-center gap-2 rounded-2xl bg-slate-700 px-5 py-4 font-black text-white transition hover:bg-slate-600"
+            disabled={imprimiendo}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-slate-700 px-5 py-4 font-black text-white transition hover:bg-slate-600 disabled:opacity-60"
           >
-            <Printer size={20} />
-            Imprimir ticket
+            {imprimiendo ? (
+              <>
+                <LoaderCircle size={20} className="animate-spin" />
+                Imprimiendo...
+              </>
+            ) : (
+              <>
+                <Printer size={20} />
+                Imprimir ticket
+              </>
+            )}
           </button>
 
           <Link
@@ -1016,6 +1054,15 @@ export default function TicketPage() {
     }
   }
 `}</style>
+      <ThermalReceiptModal
+        isOpen={modalAbierto}
+        onClose={cerrarModal}
+        ticketHtml={ultimoResultado?.ticketHtml || ""}
+        titulo={ultimoResultado?.titulo || "Ticket de Pre-cuenta"}
+        paperWidth={ultimoResultado?.paperWidth || "80mm"}
+        networkPrinted={ultimoResultado?.networkPrinted}
+        networkError={ultimoResultado?.error}
+      />
     </main>
   );
 }

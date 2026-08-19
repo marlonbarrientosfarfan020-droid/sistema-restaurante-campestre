@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   PackageCheck,
+  Printer,
   ReceiptText,
   Settings,
   ShoppingBasket,
@@ -124,6 +125,13 @@ const opcionesOperativas: OpcionMenu[] = [
 ];
 
 const opcionesAdministracion: OpcionMenu[] = [
+  {
+    href: "/dashboard/configuracion/impresoras",
+    texto: "Impresoras",
+    descripcion: "Térmicas de red y fallback",
+    icono: <Printer size={20} />,
+    adminOnly: true,
+  },
   {
     href: "/dashboard/configuracion/usuarios",
     texto: "Usuarios y roles",
